@@ -16,6 +16,10 @@ class State():
             '0x419': "ru-RU",
             '0x409': "en-US",
         }
+        self.languages_for_speacher_service = {
+            '0x419': "ru",
+            '0x409': "en-US",
+        }
 
     def getStr(self, str):
         match self.case:
@@ -50,4 +54,4 @@ def get_keyboard_language():
     if language_id_hex in languages.keys():
         return languages[language_id_hex]
     else:
-        return languages[0x419]
+        return languages['0x419']
