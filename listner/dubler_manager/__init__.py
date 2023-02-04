@@ -1,4 +1,5 @@
 import speach_manager.state
+from speach_manager import speech_service
 from gtts import gTTS
 import os
 
@@ -7,13 +8,14 @@ LISTNER = ['dublin', 'дублёр']
 
 class DublerManager():
 
-    def __init__(self, state, manager):
-        self.state = state
+    def __init__(self):
         self.current_manager = "дублёр"
-        self.speech_service = manager
-        self.manager = manager
+        self.speech_service = speech_service.SpeechService()
         self.commands = LANG_RETURN_COMMANDS
         self.process = LISTNER
+
+    def start(self):
+        self.speech_service.speech('дублёр менеджер', speech_service.LANG_RUS)
 
     def is_spec(self, str) -> bool:
         for c in self.commands:
@@ -21,16 +23,15 @@ class DublerManager():
                 return True
 
         return False
-    def is_spec_proc(self, name) -> bool:
+    def is_spec_proc(self, str) -> bool:
         for c in self.process:
-            if c.find(name) != -1:
+            if str.lower().find(c.lower()) != -1:
                 return True
 
         return False
 
     def run(self):
-        self.speech_service.run('дублёр активирован')
-        self.manager.current_manager = self.current_manager
+        return self
 
     def process_to_run(self, str):
         self.speech_service.run(str)

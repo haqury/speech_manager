@@ -1,15 +1,17 @@
 from gtts import gTTS
 import os
+import pyglet
 
-import speach_manager.state
+import speach_manager.state as state
 
 LANG_RUS = 'ru'
-RETURN_COMMANDS = ['скажи', 'повтори', 'the fall']
+PATH_FILE_SPEECH = 'downloads/example.mp3'
+RETURN_COMMANDS = ['повтори', 'the fall', 'double or']
 
 class SpeechService():
-    def __init__(self, state: speach_manager.state.State):
+    def __init__(self):
         self.commands = RETURN_COMMANDS
-        self.state = state
+        self.lang_rus = 'ru'
 
     def is_spec(self, str) -> bool:
         for c in self.commands:
@@ -19,7 +21,8 @@ class SpeechService():
         return False
 
     def run(self, str):
-        return self.speech(str, speach_manager.state.get_keyboard_language())
+        return self.speech(str, state.get_keyboard_language())
+
     def speech(self, str, languages):
         audio = gTTS(text=str, lang='ru', slow=False)
 
@@ -29,5 +32,17 @@ class SpeechService():
 def speech(str, languages):
     audio = gTTS(text=str, lang=languages, slow=False)
 
-    audio.save("example.mp3")
-    os.system("start example.mp3")
+    audio.save(PATH_FILE_SPEECH)
+    song = pyglet.media.load(PATH_FILE_SPEECH)
+    song.play()
+    os.remove(PATH_FILE_SPEECH)
+
+def list_file(path):
+    song = pyglet.media.load(path)
+    song.play()
+
+def speechOld(str, languages):
+    audio = gTTS(text=str, lang=languages, slow=False)
+
+    audio.save(PATH_FILE_SPEECH)
+    os.system("start "+PATH_FILE_SPEECH)

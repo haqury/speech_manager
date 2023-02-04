@@ -1,36 +1,32 @@
-import speech_recognition as sr
-
 import speach_manager.speech_service
-from speach_manager import error, listner
+from speach_manager.listner import dubler_manager
+import speach_manager.manager.gpt as gpt
+
+call = ["менеджер "]
+PATH_FILE_SPEECH_FIRST = 'downloads/Warcraft III – Я жажду служить_(mp3phoenix.ru).mp3'
+
+class Managers():
+    def __init__(self, window):
+        self.window = window
+        self.managers_process = [
+            dubler_manager.DublerManager(),
+            gpt.GptManager()
+        ]
+
+    def start(self):
+        speach_manager.speech_service.list_file(PATH_FILE_SPEECH_FIRST)
+
+    def spec(self, str):
+        for m in self.managers_process:
+            print(self, str, m, 0 if m.is_spec_proc(str) else 1)
+            if str and m.is_spec_proc(str):
+                return m
+
+        return False
+
+    def process_to_run(self, str):
+        return self.spec(str)
 
 
-class Manager():
-
-    def __init__(self):
-        global state
-        self.logger = error.Logger
-        self_listner = 'manager'
-        self_listners_list = ['list']
-
-    def proc(self):
-         with sr.Microphone() as source:
-            r = sr.Recognizer()
-            while 1:
-                # try:
-                    audio_data = r.record(source, duration=5)
-                    result = r.recognize_google(audio_data, language=state.get_keyboard_language(), show_all=True)
-                    self.spec(result)
-
-                # except sr.UnknownValueError:
-                #     self.logger.log("Google Speech Recognition could not understand audio")
-                # except sr.RequestError as e:
-                #     self.logger.log("Could not request results from Google Speech Recognition service; {0}".format(e))
-                # except OSError as e:
-                #     self.logger.log("OSError service; {0}".format(e))
-                # except TypeError as e:
-                #     self.logger.log("TypeError service; {0}".format(e))
-
-    def spec(self, result):
-        global state
-        str = listner.ListnerManger.get_string(result)
-        listner.ListnerManger.is_process(str)
+    def write(self, result):
+        self.window.lables.insertPlainText(result)

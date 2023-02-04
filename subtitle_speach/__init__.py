@@ -1,6 +1,7 @@
 import sys
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.Qt import *
+import pyperclip as pc
 
 class Widget(QWidget):
     def __init__(self, parent=None):
@@ -14,6 +15,10 @@ class Widget(QWidget):
         main_layout.addStretch()
         self.setWindowFlags(Qt.FramelessWindowHint)
 
+class MessageLabel(QLabel):
+    def mousePressEvent(self, event):
+        pc.copy(self.text())
+
 
 class MainWindow(QMainWindow):  # QMainWindow  -QWidget
     def __init__(self):
@@ -21,30 +26,84 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         self.centralwidget = QWidget()
         self.setCentralWidget(self.centralwidget)
 
+        self.message_fields = []
+
         self.widget = Widget(self)
-        lbl = QLabel('', self, alignment=Qt.AlignTop)
-        lbl.setStyleSheet("""
-            QLabel {
-                font-family: 'Consolas'; 
-                color: green; 
-                font-size: 30px;
-            }
-        """)
-        self.lable = lbl
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setAttribute(Qt.WA_NoSystemBackground, False)
         self.setWindowFlags(Qt.FramelessWindowHint)
-        self.setStyleSheet("""MainWindow {background-color: rgba(255, 255, 255,    20);}""")
+        self.setStyleSheet("""MainWindow {background-color: rgba(0, 0, 0,    20);}""")
 
         self.setWindowFlags(self.windowFlags() |
                             Qt.FramelessWindowHint |
                             Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
-
         layout = QVBoxLayout(self.centralwidget)
         layout.addWidget(self.widget)
+        self.lables = []
+        lbl = QLabel()
+        lbl.setStyleSheet("""
+                QLabel {
+                    font-family: 'Consolas';
+                    color: green;
+                    font-size: 30px;
+
+                }
+            """)
+
+        self.lable = lbl
         layout.addWidget(lbl)
+
+        # i = 0
+        # while i < 3:
+        #     lbl = MessageLabel()
+        #     lbl.setStyleSheet("""
+        #             QLabel {
+        #                 font-family: 'Consolas';
+        #                 color: green;
+        #                 font-size: 30px;
+        #                 background-color: rgba(0, 0, 0,    20);
+        #             }
+        #         """)
+        #
+        #     self.message_fields.append(lbl)
+        #     layout.addWidget(lbl)
+        #     i = i + 1
+
         layout.addStretch()
+
+
+    # def addAnswer(self, str):
+        # lbl = QPlainTextEdit()
+        # lbl.setStyleSheet("""
+        #     QPlainTextEdit {
+        #         font-family: 'Consolas';
+        #         color: green;
+        #         font-size: 30px;
+        #
+        #     }
+        # """)
+        #
+        # layout = QVBoxLayout(self.centralwidget)
+        # layout.addWidget(lbl)
+        # layout.addStretch()
+        # for l in self.lables:
+        #     # if l.toPlainText() == '':
+        #     l.insertPlainText(str)
+
+
+        # lbl = self.getNextLabel()
+        # lbl.setText(str)
+
+    def getNextLabel(self) -> MessageLabel:
+        for a in self.message_fields:
+            if not a.text():
+                return a
+        for i, a in self.message_fields:
+            if not self.message_fields[i + 1]:
+                return a
+            self.message_fields[i] = self.message_fields[i+1]
+
 
 
 
@@ -64,3 +123,5 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
             else:
                 self.move(self.x() + delta.x(), self.y() + delta.y())
                 self.old_Pos = event.globalPos()
+    def mouseDoubleClickEvent(self, event):
+        pc.copy(self.lable.text())
