@@ -5,21 +5,19 @@ from win32api import GetSystemMetrics
 
 import config
 
-import speach_manager.speech_service
 import state as s
 import error
 import listner
 import manager
 import speech_recognition as sr
 
-# import manager
 
 import subtitle_speach
+import dialog_speach
 
 from PyQt5.Qt import *
 from threading import Thread
 
-from speach_manager import chat
 
 r = sr.Recognizer()
 
@@ -155,10 +153,14 @@ def list():
 def view_wget():
     w.resize(500, 150)
     w.show()
-    w.move(w.pos().x(), GetSystemMetrics(1)-250)
+    w.move(GetSystemMetrics(0)-w.size().width(), GetSystemMetrics(1)-400)
+    dw.resize(500, 150)
+    dw.show()
+    dw.move(GetSystemMetrics(0)-w.size().width(), GetSystemMetrics(1)-400)
     sys.exit(app.exec())
 
 w = subtitle_speach.MainWindow()
+dw = dialog_speach.MainWindow()
 # w = chat.ChatApp()
 
 
