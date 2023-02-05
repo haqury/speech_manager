@@ -1,7 +1,6 @@
-import sys
-from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.Qt import *
 import pyperclip as pc
+import numpy as np
 
 class Widget(QWidget):
     def __init__(self, parent=None):
@@ -19,6 +18,9 @@ class MessageLabel(QLabel):
     def mousePressEvent(self, event):
         pc.copy(self.text())
 
+    def mouseDoubleClickEvent(self, event):
+        pc.copy(self.text())
+        self.setText('')
 
 class MainWindow(QMainWindow):  # QMainWindow  -QWidget
     def __init__(self):
@@ -32,7 +34,7 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setAttribute(Qt.WA_NoSystemBackground, False)
         self.setWindowFlags(Qt.FramelessWindowHint)
-        self.setStyleSheet("""MainWindow {background-color: rgba(0, 0, 0,    20);}""")
+        self.setStyleSheet("""MainWindow {background-color: rgba(0, 0, 0,    4);}""")
 
         self.setWindowFlags(self.windowFlags() |
                             Qt.FramelessWindowHint |
@@ -40,40 +42,28 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         self.setAttribute(Qt.WA_TranslucentBackground)
         layout = QVBoxLayout(self.centralwidget)
         layout.addWidget(self.widget)
-        self.lables = []
-        lbl = QLabel()
-        lbl.setStyleSheet("""
-                QLabel {
-                    font-family: 'Consolas';
-                    color: green;
-                    font-size: 30px;
 
-                }
-            """)
+        i = 0
+        self.labels = []
+        while i < 3:
+            lbl = MessageLabel()
+            lbl.setStyleSheet("""
+                    QLabel {
+                        font-family: 'Consolas';
+                        color: green;
+                        font-size: 30px;
+                        background-color: rgba(0, 0, 0,    40);
+                    }
+                """)
 
-        self.lable = lbl
-        layout.addWidget(lbl)
-
-        # i = 0
-        # while i < 3:
-        #     lbl = MessageLabel()
-        #     lbl.setStyleSheet("""
-        #             QLabel {
-        #                 font-family: 'Consolas';
-        #                 color: green;
-        #                 font-size: 30px;
-        #                 background-color: rgba(0, 0, 0,    20);
-        #             }
-        #         """)
-        #
-        #     self.message_fields.append(lbl)
-        #     layout.addWidget(lbl)
-        #     i = i + 1
+            self.labels.append(lbl)
+            layout.addWidget(lbl)
+            i = i + 1
 
         layout.addStretch()
 
 
-    # def addAnswer(self, str):
+    def addAnswer(self, str):
         # lbl = QPlainTextEdit()
         # lbl.setStyleSheet("""
         #     QPlainTextEdit {
@@ -92,17 +82,22 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         #     l.insertPlainText(str)
 
 
-        # lbl = self.getNextLabel()
-        # lbl.setText(str)
+        lbl = self.getNextLabel()
+        lbl.setText(str)
 
-    def getNextLabel(self) -> MessageLabel:
-        for a in self.message_fields:
+
+    def getNextLabel(self) -> QLabel:
+        for a in self.labels:
             if not a.text():
                 return a
-        for i, a in self.message_fields:
-            if not self.message_fields[i + 1]:
-                return a
-            self.message_fields[i] = self.message_fields[i+1]
+
+        i = 0
+        while i < len(self.labels):
+            if i+1 == len(self.labels):
+                return self.labels[i]
+            self.labels[i].setText(self.labels[i+1].text())
+            i += 1
+
 
 
 
@@ -123,5 +118,3 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
             else:
                 self.move(self.x() + delta.x(), self.y() + delta.y())
                 self.old_Pos = event.globalPos()
-    def mouseDoubleClickEvent(self, event):
-        pc.copy(self.lable.text())

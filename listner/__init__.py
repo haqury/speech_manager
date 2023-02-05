@@ -43,7 +43,7 @@ class ListnerManger():
     def process_write(self, str: str):
         str = self.state.getStr(str)
         self.save(self.concat_str(str))
-        self.write()
+        self.write(str)
 
     def is_command_write(self, str):
         for i in self.base_commands:
@@ -89,17 +89,16 @@ class ListnerManger():
             rhis.pop(0)
         self.his = list(reversed(rhis))
 
-    def write(self):
-        string = "\n".join(list(reversed(self.his)))
-        self.window.lable.setText(string)
+    def write(self, str):
+        # self.window.labels[0].setText(string)
 
-        # self.window.addAnswer(string)
+        self.window.addAnswer(str)
 
     def last_rebuld(self):
         for h in self.his:
             h = self.state.getStr(h)
             self.save(h)
-            self.write()
+            self.write(str)
 
     def is_commands(self, str):
         for c in self.commands:

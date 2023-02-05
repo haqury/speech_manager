@@ -153,7 +153,7 @@ def list():
 
 
 def view_wget():
-    w.resize(800, 150)
+    w.resize(500, 150)
     w.show()
     w.move(w.pos().x(), GetSystemMetrics(1)-250)
     sys.exit(app.exec())
