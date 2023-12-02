@@ -2,6 +2,7 @@
 import sys
 import time
 from win32api import GetSystemMetrics
+import keyboard
 
 import config
 
@@ -10,6 +11,9 @@ import error
 import listner
 import manager
 import speech_recognition as sr
+
+import keybaord
+
 
 
 import subtitle_speach
@@ -49,8 +53,8 @@ def manager_proc(w):
                 except:
                     print('not start')
                 # if curr_manager == m:
-                #     speach_manager.speech_service.list_file(PATH_FILE_SPEECH_FIRST)
-                # speach_manager.speech_service.speech('выберите менеджера', 'ru')
+                #     speech_service.list_file(PATH_FILE_SPEECH_FIRST)
+                # speech_service.speech('выберите менеджера', 'ru')
 
                 ad = r.listen(source, phrase_time_limit=6)
                 m.write('record')
@@ -81,7 +85,7 @@ def manager_proc(w):
             #     logger.log("TypeError service; {0}".format(e))
 
 
-def write_proc():
+def write_proc(w):
     print('write_proc: start')
     global state
     global audio_data
@@ -139,7 +143,9 @@ def list():
 
     with sr.Microphone() as source:
         try:
-            audio_data = r.listen(source, phrase_time_limit=3)
+            w.statelbl.setText("speech-to-text on")
+            audio_data = r.listen(source, phrase_time_limit=5)
+            w.statelbl.setText("speech-to-text off")
         except sr.UnknownValueError:
             logger.log("Google Speech Recognition could not understand audio")
         except sr.RequestError as e:
@@ -154,18 +160,21 @@ def view_wget():
     w.resize(500, 150)
     w.show()
     w.move(GetSystemMetrics(0)-w.size().width(), GetSystemMetrics(1)-400)
-    dw.resize(500, 150)
-    dw.show()
-    dw.move(GetSystemMetrics(0)-w.size().width(), GetSystemMetrics(1)-400)
+    # dw.resize(500, 150)
+    # dw.show()
+    # dw.move(GetSystemMetrics(0)-w.size().width(), GetSystemMetrics(1)-400)
+    objectName = keybaord.VirtualKeyboard()
+    objectName.engine()
+    objectName.start()
     sys.exit(app.exec())
 
 w = subtitle_speach.MainWindow()
-dw = dialog_speach.MainWindow()
+# dw = dialog_speach.MainWindow()
 # w = chat.ChatApp()
 
 
 l = listner.ListnerManger(state, w)
-th = Thread(target=write_proc, args=())
+th = Thread(target=write_proc, args=(w,))
 th.start()
 tl = Thread(target=listed, args=())
 tl.start()

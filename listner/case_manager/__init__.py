@@ -1,7 +1,7 @@
 import pyperclip as pc
 SNAKE_CASE = ['snake', 'make', 'снейк', 'smokies']
 CAMEL_CASE = ['camel', 'como', 'кому', 'хаббл', 'kamo']
-DEFAULT_CASE = ['default', 'the fault', 'the fall']
+DEFAULT_CASE = ['default', 'the fault', 'the fall', 'дефолт_кейс', 'стандарт_кейс']
 IS_UP = ['is up', 'из opt', 'is app', 'is apt']
 
 

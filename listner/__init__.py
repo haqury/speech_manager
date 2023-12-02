@@ -2,11 +2,11 @@ import string
 
 import pyperclip as pc
 import tkinter as tk
-import speach_manager.speech_service as speach_service
-from speach_manager.listner import project_manager, case_manager, dubler_manager, config_manager
+import speech_service as speach_service
+from listner import project_manager, case_manager, dubler_manager, config_manager
 import telegram
 import pyautogui
-import speach_manager.manager.gpt as gpt
+import manager.gpt as gpt
 
 
 class ListnerManger():
@@ -42,7 +42,7 @@ class ListnerManger():
 
     def process_write(self, str: str):
         str = self.state.getStr(str)
-        self.save(self.concat_str(str))
+        self.save(str)
         self.write(str)
 
     def is_command_write(self, str):
@@ -95,9 +95,9 @@ class ListnerManger():
         self.window.addAnswer(str)
 
     def last_rebuld(self):
-        for h in self.his:
-            h = self.state.getStr(h)
-            self.save(h)
+        for str in self.his:
+            str = self.state.getStr(str)
+            self.save(str)
             self.write(str)
 
     def is_commands(self, str):

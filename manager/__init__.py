@@ -1,6 +1,6 @@
-import speach_manager.speech_service
-from speach_manager.listner import dubler_manager
-import speach_manager.manager.gpt as gpt
+import speech_service
+from listner import dubler_manager
+import manager.gpt as gpt
 
 call = ["менеджер "]
 PATH_FILE_SPEECH_FIRST = 'downloads/Warcraft III – Я жажду служить_(mp3phoenix.ru).mp3'
@@ -14,7 +14,7 @@ class Managers():
         ]
 
     def start(self):
-        speach_manager.speech_service.list_file(PATH_FILE_SPEECH_FIRST)
+        speech_service.list_file(PATH_FILE_SPEECH_FIRST)
 
     def spec(self, str):
         for m in self.managers_process:

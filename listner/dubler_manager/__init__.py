@@ -1,7 +1,9 @@
-import speach_manager.state
-from speach_manager import speech_service
+import speech_service
+import state
 from gtts import gTTS
 import os
+
+from speech_service import SpeechService
 
 LANG_RETURN_COMMANDS = ['повторяй', 'osteria']
 LISTNER = ['dublin', 'дублёр']
@@ -10,7 +12,7 @@ class DublerManager():
 
     def __init__(self):
         self.current_manager = "дублёр"
-        self.speech_service = speech_service.SpeechService()
+        self.speech_service = SpeechService()
         self.commands = LANG_RETURN_COMMANDS
         self.process = LISTNER
 

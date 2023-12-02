@@ -2,11 +2,11 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from speach_manager import speech_service
-import speach_manager.client.gpt as gpt
+import speech_service
+import client.gpt as gpt
 from threading import Thread
 from win32api import GetSystemMetrics
-import speach_manager.manager.gpt.answer
+import manager.gpt.answer
 
 app = QApplication(sys.argv)
 

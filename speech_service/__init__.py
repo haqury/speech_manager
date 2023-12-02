@@ -2,7 +2,7 @@ from gtts import gTTS
 import os
 import pyglet
 
-import speach_manager.state as state
+import state as state
 
 LANG_RUS = 'ru'
 PATH_FILE_SPEECH = 'downloads/example.mp3'
