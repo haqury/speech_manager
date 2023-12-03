@@ -11,6 +11,8 @@ class State():
         self.case = 0
         self.Config = config
         self.listner = "write"
+        self.active = False
+
         self.fastWrite = False
         self.is_up = False
 
