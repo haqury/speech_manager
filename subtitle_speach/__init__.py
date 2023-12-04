@@ -13,7 +13,7 @@ class Widget(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(self.line)
         main_layout.addStretch()
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(self.windowFlags())
 
 class MessageLabel(QLabel):
     def mousePressEvent(self, event):
@@ -37,12 +37,8 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         self.widget = Widget(self)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setAttribute(Qt.WA_NoSystemBackground, False)
-        self.setWindowFlags(Qt.FramelessWindowHint)
         self.setStyleSheet("""MainWindow {background-color: rgba(0, 0, 0,    4);}""")
 
-        self.setWindowFlags(self.windowFlags() |
-                            Qt.FramelessWindowHint |
-                            Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         layout = QVBoxLayout(self.centralwidget)
         layout.addWidget(self.widget)
@@ -75,6 +71,10 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
             layout.addWidget(lbl)
 
         layout.addStretch()
+
+        self.setWindowFlags(Qt.Tool |
+                            Qt.FramelessWindowHint |
+                            Qt.WindowStaysOnTopHint)
 
     def addAnswer(self, str):
         lbl = self.getNextLabel()
