@@ -124,17 +124,6 @@ def write_proc(w):
         #     logger.log("TypeError service; {0}".format(e))
         #     print()
 
-
-def listedd():
-    while 1:
-        if state.listner != 'write':
-            time.sleep(0.5)
-            continue
-        tll = Thread(target=list, args=())
-        tll.start()
-        time.sleep(2.8)
-
-
 def listed():
     print('listed write')
     if state.listner != 'write':
@@ -177,7 +166,7 @@ def view_wget():
     sys.exit(app.exec())
 
 # Запускает слушатель
-keyboard.add_hotkey('Ctrl + 1', lambda: listed())
+keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list())
 
 w = subtitle_speach.MainWindow()
 # dw = dialog_speach.MainWindow()
