@@ -57,7 +57,7 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
 
         self.statelbl.setText("speech-to-text off")
 
-        self.labels = [MessageLabel(self) for i in range(8)]
+        self.labels = [MessageLabel(self) for i in range(3)]
         for i, lbl in enumerate(self.labels):
             lbl.setStyleSheet("""
                     QLabel {
