@@ -166,7 +166,7 @@ def view_wget():
     sys.exit(app.exec())
 
 # Запускает слушатель
-keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list())
+keyboard.add_hotkey('ctrl+shift+win+f5', lambda: listed())
 
 w = subtitle_speach.MainWindow()
 # dw = dialog_speach.MainWindow()
