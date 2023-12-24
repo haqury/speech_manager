@@ -1,20 +1,26 @@
 import string
+import time
+from threading import Thread
 
 import pyperclip as pc
 import tkinter as tk
 import speech_service as speach_service
+import state
 from listner import project_manager, case_manager, dubler_manager, config_manager
 import telegram
 import pyautogui
 import manager.gpt as gpt
 
+import speech_recognition as sr
+
 
 class ListnerManger():
     def __init__(self, state, window):
-        self.base_commands = ['система вернись', 'gorilla cup', 'говорилка', 'горилка', 'говорил']
+        self.base_commands = ['система вернись', 'gorilla cup', 'говорилка', 'горилка', 'говорил', 'уважаемый']
         self.current_manager = "write"
         self.commands = ['поговори со мной', 'theresa may', 'play some movie']
-        self.commands_state = ['case', 'keys', 'gypsy rose', 'айз', 'smokies', 'is up', 'is ap', 'activate', 'gpt подскажи']
+        self.commands_state = ['case', 'keys', 'gypsy rose', 'айз', 'smokies', 'is up', 'is ap', 'activate',
+                               'gpt подскажи']
         self.state = state
         self.window = window
         self.his = []
@@ -26,12 +32,11 @@ class ListnerManger():
             config_manager.ConfigManger(self),
             gpt.GptManager()
         ]
+        self.r = sr.Recognizer()
         self.managers_process = [
             self,
             dubler_manager.DublerManager()
         ]
-
-
 
     def process(self, speach_resul):
         str = self.get_string(speach_resul=speach_resul)
@@ -105,6 +110,7 @@ class ListnerManger():
             if str.find(c) != -1:
                 return str
         return False
+
     def is_commands_state(self, str):
         for c in self.commands_state:
             if str.find(c) != -1:
@@ -140,3 +146,20 @@ class ListnerManger():
 
         bot.send_message(chat_id='YOUR_CHAT_ID', text=code)
 
+    def pocessAudio(self, data):
+        result = self.r.recognize_google(data, language=self.state.get_keyboard_language(), show_all=True)
+
+        str = self.get_string(speach_resul=result)
+        if not str:
+            return
+
+        c = self.is_commands(str)
+        if c:
+            self.state.listner = 'manager'
+
+        c = self.is_commands_state(str)
+        if c:
+            self.get_command_secification(str)
+
+        pr = Thread(target=self.process, args=(result,))
+        pr.start()

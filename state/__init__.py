@@ -1,6 +1,8 @@
 import ctypes
 import re
 
+EN_US = "en-US"
+
 CASE_DEFAULT = 0
 CASE_CAMEL = 1
 CASE_SNAKE = 2
@@ -46,7 +48,7 @@ class State():
     def get_keyboard_language(self):
         languages = {
             '0x419': "ru-RU",
-            '0x409': "en-US",
+            '0x409': EN_US,
         }
         user32 = ctypes.WinDLL('user32', use_last_error=True)
         handle = user32.GetForegroundWindow()

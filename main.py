@@ -132,14 +132,14 @@ def listed():
     tll.start()
     time.sleep(2.8)
 
-def list():
+def list(m):
     global audio_data
 
     with sr.Microphone() as source:
         try:
-            w.statelbl.setText("speech-to-text on")
-            audio_data = r.listen(source, phrase_time_limit=5)
-            w.statelbl.setText("speech-to-text off")
+            m.window.statelbl.setText("speech-to-text on")
+            m.pocessAudio(r.listen(source, phrase_time_limit=5))
+            m.window.statelbl.setText("speech-to-text off")
         except sr.UnknownValueError:
             logger.log("Google Speech Recognition could not understand audio")
         except sr.RequestError as e:
@@ -165,14 +165,15 @@ def view_wget():
 
     sys.exit(app.exec())
 
-# Запускает слушатель
-keyboard.add_hotkey('ctrl+shift+win+f5', lambda: listed())
-
 w = subtitle_speach.MainWindow()
 # dw = dialog_speach.MainWindow()
 # w = chat.ChatApp()
 
 l = listner.ListnerManger(state, w)
+
+# Запускает слушатель
+keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list(l))
+
 th = Thread(target=write_proc, args=(w,))
 th.start()
 
