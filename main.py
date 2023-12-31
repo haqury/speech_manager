@@ -122,14 +122,6 @@ def write_proc(w):
         #     logger.log("TypeError service; {0}".format(e))
         #     print()
 
-def listed():
-    print('listed write')
-    if state.listner != 'write':
-        return
-    tll = Thread(target=list, args=())
-    tll.start()
-    time.sleep(2.8)
-
 def list(m):
     global audio_data
 
@@ -168,10 +160,9 @@ main_window.widget_manager.add_widget(3, speach)
 main_window.show_widget(1)
 main_window.show_widget(2)
 main_window.show_widget(3)
-w = main_window.widget_manager.get_widget(3)
 
 
-l = listner.ListnerManger(state, speach)
+l = listner.ListnerManger(state, main_window)
 
 # Запускает слушатель
 keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list(l))
@@ -179,9 +170,6 @@ keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list(l))
 th = Thread(target=write_proc, args=(speach,))
 th.start()
 
-
-tm = Thread(target=manager_proc, args=(speach,))
-tm.start()
 
 tw = Thread(target=view_wget(), args=())
 tw.start()

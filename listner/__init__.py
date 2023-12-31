@@ -22,7 +22,8 @@ class ListnerManger():
         self.commands_state = ['case', 'keys', 'gypsy rose', 'айз', 'smokies', 'is up', 'is ap', 'activate',
                                'gpt подскажи']
         self.state = state
-        self.window = window
+        self.window = window.widget_manager.get_widget(3)
+        self.app = window
         self.his = []
         self.his_arr = []
         self.managers = [
