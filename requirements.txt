@@ -9,3 +9,5 @@ pyperclip
 openai
 keyboard
 gTTS
+DearWidgetTemplate @ git+https://github.com/haqury/DearWidgetTemplate@0.1
+DearWidgetTemplate @ git+https://github.com/haqury/SpeachToTextWidget@0.1

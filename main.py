@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import sys
 import time
-from win32api import GetSystemMetrics
+
+import SpeachToTextWidget, DearWidgetTemplate
 import keyboard
-from pynput import keyboard as hotkeyPackage
 
 import config
 
@@ -13,11 +13,9 @@ import listner
 import manager
 import speech_recognition as sr
 
-import subtitle_speach
-import dialog_speach
-
 from PyQt5.Qt import *
 from threading import Thread
+
 
 r = sr.Recognizer()
 
@@ -150,35 +148,39 @@ def list(m):
         #     logger.log("TypeError service; {0}".format(e))
 
 
+
 def view_wget():
-    w.resize(500, 150)
-    w.show()
-    w.move(GetSystemMetrics(0) - w.size().width(), GetSystemMetrics(1) - 400)
+    app = QApplication(sys.argv)
 
-    # dw.resize(500, 150)
-    # dw.show()
-    # dw.move(GetSystemMetrics(0)-w.size().width(), GetSystemMetrics(1)-400)
+    sys.exit(app.exec_())
 
-    # objectName = keybaord.VirtualKeyboard()
-    # objectName.engine()
-    # objectName.start()
+main_window = DearWidgetTemplate.App()
 
-    sys.exit(app.exec())
+speach = SpeachToTextWidget.SpeachToTextWidget()
 
-w = subtitle_speach.MainWindow()
-# dw = dialog_speach.MainWindow()
-# w = chat.ChatApp()
+speach.resize(500, 150)
+speach.show()
+speach.move(500, 400)
 
-l = listner.ListnerManger(state, w)
+main_window.widget_manager.add_widget(3, speach)
+
+# Пример вызова отображения виджета по запросу
+main_window.show_widget(1)
+main_window.show_widget(2)
+main_window.show_widget(3)
+w = main_window.widget_manager.get_widget(3)
+
+
+l = listner.ListnerManger(state, speach)
 
 # Запускает слушатель
 keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list(l))
 
-th = Thread(target=write_proc, args=(w,))
+th = Thread(target=write_proc, args=(speach,))
 th.start()
 
 
-tm = Thread(target=manager_proc, args=(w,))
+tm = Thread(target=manager_proc, args=(speach,))
 tm.start()
 
 tw = Thread(target=view_wget(), args=())

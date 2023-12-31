@@ -74,7 +74,7 @@ def view_wget():
     w.move(w.pos().x(), GetSystemMetrics(1)-250)
     sys.exit(app.exec())
 
-w = subtitle_speach.MainWindow()
+w = subtitle_speach.SpeachToTextWidget()
 l = listner.ListnerManger(s, w)
 th = Thread(target=proc, args=())
 th.start()
