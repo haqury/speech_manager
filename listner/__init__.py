@@ -39,6 +39,9 @@ class ListnerManger():
             dubler_manager.DublerManager()
         ]
 
+    def set_managers(self, managers):
+        self.managers = managers
+
     def process(self, speach_resul):
         str = self.get_string(speach_resul=speach_resul)
         if not str:

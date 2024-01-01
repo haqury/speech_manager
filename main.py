@@ -15,9 +15,6 @@ import speech_recognition as sr
 from PyQt5.Qt import *
 from threading import Thread
 
-
-r = sr.Recognizer()
-
 conf = config.Config
 state = s.State(conf)
 
@@ -28,6 +25,7 @@ audio_data = None
 audio_data_output = None
 
 def list(m):
+    r = sr.Recognizer()
     global audio_data
 
     with sr.Microphone() as source:
@@ -65,7 +63,6 @@ main_window.widget_manager.add_widget(3, speach)
 main_window.show_widget(1)
 main_window.show_widget(2)
 main_window.show_widget(3)
-
 
 l = listner.ListnerManger(state, main_window)
 
