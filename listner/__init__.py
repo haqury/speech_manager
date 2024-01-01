@@ -1,15 +1,13 @@
-import string
-import time
+
 from threading import Thread
 
+import CaseManager, ConfigManager
 import pyperclip as pc
-import tkinter as tk
 import speech_service as speach_service
-import state
-from listner import project_manager, case_manager, dubler_manager, config_manager
-import telegram
 import pyautogui
-import manager.gpt as gpt
+import gpt
+import openai
+
 
 import speech_recognition as sr
 
@@ -22,22 +20,19 @@ class ListnerManger():
         self.commands_state = ['case', 'keys', 'gypsy rose', 'айз', 'smokies', 'is up', 'is ap', 'activate',
                                'gpt подскажи']
         self.state = state
+        self.config = state.Config
         self.window = window.widget_manager.get_widget(3)
         self.app = window
         self.his = []
         self.his_arr = []
+        ss = speach_service.SpeechService()
         self.managers = [
-            case_manager.CaseManager(self),
-            speach_service.SpeechService(),
-            dubler_manager.DublerManager(),
-            config_manager.ConfigManger(self),
-            gpt.GptManager()
+            CaseManager.CaseManager(self),
+            ss,
+            ConfigManager.ConfigManager(self),
+            gpt.GptManager(ss, self.state.Config)
         ]
         self.r = sr.Recognizer()
-        self.managers_process = [
-            self,
-            dubler_manager.DublerManager()
-        ]
 
     def set_managers(self, managers):
         self.managers = managers
@@ -133,22 +128,17 @@ class ListnerManger():
             return True
         return False
 
-    def get_process_secification(self):
-        for m in self.managers_process:
-            if m.is_spec_proc(self.state.current_manager):
-                return m.run()
-
-    def send_to_telegram(self):
-        bot = telegram.Bot(token='5911315799:AAGwigQbxl_t2Q-Tm10bK671Gcq3-PXAEp4')
-
-        code = '''
-        def greet(name):
-            print("Hello, " + name + "!")
-
-        greet("John")
-        '''
-
-        bot.send_message(chat_id='YOUR_CHAT_ID', text=code)
+    # def send_to_telegram(self):
+    #     bot = telegram.Bot(token='5911315799:AAGwigQbxl_t2Q-Tm10bK671Gcq3-PXAEp4')
+    #
+    #     code = '''
+    #     def greet(name):
+    #         print("Hello, " + name + "!")
+    #
+    #     greet("John")
+    #     '''
+    #
+    #     bot.send_message(chat_id='YOUR_CHAT_ID', text=code)
 
     def pocessAudio(self, data):
         result = self.r.recognize_google(data, language=self.state.get_keyboard_language(), show_all=True)

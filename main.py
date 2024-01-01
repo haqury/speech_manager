@@ -15,7 +15,10 @@ import speech_recognition as sr
 from PyQt5.Qt import *
 from threading import Thread
 
-conf = config.Config
+from dotenv import load_dotenv
+
+load_dotenv()
+conf = config.Config()
 state = s.State(conf)
 
 app = QApplication(sys.argv)
@@ -49,7 +52,7 @@ def view_wget():
 
     sys.exit(app.exec_())
 
-main_window = DearWidgetTemplate.App()
+main_window = DearWidgetTemplate.App(state)
 
 speach = SpeachToTextWidget.SpeachToTextWidget()
 
