@@ -1,12 +1,9 @@
 
 from threading import Thread
 
-import CaseManager, ConfigManager
 import pyperclip as pc
 import speech_service as speach_service
 import pyautogui
-import gpt
-import openai
 
 
 import speech_recognition as sr
@@ -17,22 +14,21 @@ class ListnerManger():
         self.base_commands = ['система вернись', 'gorilla cup', 'говорилка', 'горилка', 'говорил', 'уважаемый']
         self.current_manager = "write"
         self.commands = ['поговори со мной', 'theresa may', 'play some movie']
-        self.commands_state = ['case', 'keys', 'gypsy rose', 'айз', 'smokies', 'is up', 'is ap', 'activate',
+        self.commands_state = ['case', 'keys', 'кейс', 'gypsy rose', 'айз', 'smokies', 'is up', 'is ap', 'activate',
                                'gpt подскажи']
         self.state = state
         self.config = state.Config
         self.window = window.widget_manager.get_widget(3)
+
         self.app = window
         self.his = []
         self.his_arr = []
-        ss = speach_service.SpeechService()
-        self.managers = [
-            CaseManager.CaseManager(self),
-            ss,
-            ConfigManager.ConfigManager(self),
-            gpt.GptManager(ss, self.state.Config)
-        ]
         self.r = sr.Recognizer()
+
+        self.window
+
+    def setManagers(self, managers):
+        self.managers = managers
 
     def set_managers(self, managers):
         self.managers = managers

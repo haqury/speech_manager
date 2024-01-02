@@ -3,9 +3,7 @@ import sys
 import openai
 from PyQt5.Qt import *
 
-import client.gpt as gpt
 from threading import Thread
-from win32api import GetSystemMetrics
 
 app = QApplication(sys.argv)
 

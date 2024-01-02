@@ -11,5 +11,5 @@ keyboard
 gTTS
 DearWidgetTemplate @ git+https://github.com/haqury/DearWidgetTemplate@0.1
 SpeachToTextWidget @ git+https://github.com/haqury/SpeachToTextWidget@0.1
-ConfigManger @ git+https://github.com/haqury/ConfigManger@0.1
+ConfigManager @ git+https://github.com/haqury/ConfigManager@0.1
 DeskManager @ git+https://github.com/haqury/DeskManager@0.1

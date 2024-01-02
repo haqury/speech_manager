@@ -2,10 +2,14 @@
 import sys
 import time
 
+import CaseManager
+import ConfigManager
 import SpeachToTextWidget, DearWidgetTemplate
 import keyboard
 
+import speech_service
 import config
+import gpt
 
 import state as s
 import error
@@ -67,7 +71,15 @@ main_window.show_widget(1)
 main_window.show_widget(2)
 main_window.show_widget(3)
 
+ss = speech_service.SpeechService()
 l = listner.ListnerManger(state, main_window)
+managers = [
+            CaseManager.CaseManager(l),
+            ss,
+            ConfigManager.ConfigManager(l),
+            gpt.GptManager(ss, l.state.Config)
+        ]
+l.setManagers(managers)
 
 # Запускает слушатель
 keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list(l))
