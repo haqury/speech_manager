@@ -66,9 +66,6 @@ speach.move(500, 400)
 
 main_window.widget_manager.add_widget(3, speach)
 
-# Пример вызова отображения виджета по запросу
-main_window.show_widget(1)
-main_window.show_widget(2)
 main_window.show_widget(3)
 
 ss = speech_service.SpeechService()
