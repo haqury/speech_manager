@@ -1,27 +1,28 @@
 #!/usr/bin/env python3
 import sys
 import time
-from win32api import GetSystemMetrics
-import keyboard
-from pynput import keyboard as hotkeyPackage
 
+import CaseManager
+import ConfigManager
+import SpeachToTextWidget, DearWidgetTemplate
+import keyboard
+
+import speech_service
 import config
+import gpt
 
 import state as s
 import error
 import listner
-import manager
 import speech_recognition as sr
-
-import subtitle_speach
-import dialog_speach
 
 from PyQt5.Qt import *
 from threading import Thread
 
-r = sr.Recognizer()
+from dotenv import load_dotenv
 
-conf = config.Config
+load_dotenv()
+conf = config.Config()
 state = s.State(conf)
 
 app = QApplication(sys.argv)
@@ -30,109 +31,8 @@ logger = error.Logger()
 audio_data = None
 audio_data_output = None
 
-
-def manager_proc(w):
-    print('manager_proc: start')
-    global state
-    m = manager.Managers(w)
-    curr_manager = m
-    while 1:
-        if state.listner != 'manager':
-            time.sleep(3)
-            continue
-
-        with sr.Microphone() as source:
-            # try:
-            try:
-                curr_manager.start()
-            except:
-                print('not start')
-            # if curr_manager == m:
-            #     speech_service.list_file(PATH_FILE_SPEECH_FIRST)
-            # speech_service.speech('выберите менеджера', 'ru')
-
-            ad = r.listen(source, phrase_time_limit=6)
-            m.write('record')
-            result = r.recognize_google(ad, language=state.get_keyboard_language(), show_all=True)
-            str = l.get_string(speach_resul=result)
-            if not str:
-                continue
-            m.write(str)
-
-            if l.is_command_write(str):
-                curr_manager = m
-                state.listner = 'write'
-                continue
-
-            if curr_manager == m:
-                curr_manager = m.spec(str) or m
-                continue
-
-            curr_manager.process_to_run(str)
-
-        # except sr.UnknownValueError:
-        #     logger.log("Google Speech Recognition could not understand audio")
-        # except sr.RequestError as e:
-        #     logger.log("Could not request results from Google Speech Recognition service; {0}".format(e))
-        # except OSError as e:
-        #     logger.log("OSError service; {0}".format(e))
-        # except TypeError as e:
-        #     logger.log("TypeError service; {0}".format(e))
-
-
-def write_proc(w):
-    print('write_proc: start')
-    global state
-    global audio_data
-    while 1:
-        if audio_data is None:
-            time.sleep(0.5)
-            continue
-
-        if state.listner != 'write':
-            time.sleep(0.5)
-            continue
-
-        try:
-
-            ad = audio_data
-            audio_data = None
-            result = r.recognize_google(ad, language=state.get_keyboard_language(), show_all=True)
-
-            str = l.get_string(speach_resul=result)
-            if not str:
-                continue
-
-            c = l.is_commands(str)
-            if c:
-                state.listner = 'manager'
-
-            c = l.is_commands_state(str)
-            if c:
-                l.get_command_secification(str)
-
-            pr = Thread(target=l.process, args=(result,))
-            pr.start()
-
-        except sr.UnknownValueError:
-            logger.log("Google Speech Recognition could not understand audio")
-        except sr.RequestError as e:
-            logger.log("Could not request results from Google Speech Recognition service; {0}".format(e))
-        except OSError as e:
-            logger.log("OSError service; {0}".format(e))
-        # except TypeError as e:
-        #     logger.log("TypeError service; {0}".format(e))
-        #     print()
-
-def listed():
-    print('listed write')
-    if state.listner != 'write':
-        return
-    tll = Thread(target=list, args=())
-    tll.start()
-    time.sleep(2.8)
-
 def list(m):
+    r = sr.Recognizer()
     global audio_data
 
     with sr.Microphone() as source:
@@ -150,36 +50,36 @@ def list(m):
         #     logger.log("TypeError service; {0}".format(e))
 
 
+
 def view_wget():
-    w.resize(500, 150)
-    w.show()
-    w.move(GetSystemMetrics(0) - w.size().width(), GetSystemMetrics(1) - 400)
+    app = QApplication(sys.argv)
 
-    # dw.resize(500, 150)
-    # dw.show()
-    # dw.move(GetSystemMetrics(0)-w.size().width(), GetSystemMetrics(1)-400)
+    sys.exit(app.exec_())
 
-    # objectName = keybaord.VirtualKeyboard()
-    # objectName.engine()
-    # objectName.start()
+main_window = DearWidgetTemplate.App(state)
 
-    sys.exit(app.exec())
+speach = SpeachToTextWidget.SpeachToTextWidget()
 
-w = subtitle_speach.MainWindow()
-# dw = dialog_speach.MainWindow()
-# w = chat.ChatApp()
+speach.resize(500, 150)
+speach.show()
+speach.move(500, 400)
 
-l = listner.ListnerManger(state, w)
+main_window.widget_manager.add_widget(3, speach)
+
+main_window.show_widget(3)
+
+ss = speech_service.SpeechService()
+l = listner.ListnerManger(state, main_window)
+managers = [
+            CaseManager.CaseManager(l),
+            ss,
+            ConfigManager.ConfigManager(l),
+            gpt.GptManager(ss, l.state.Config)
+        ]
+l.setManagers(managers)
 
 # Запускает слушатель
 keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list(l))
-
-th = Thread(target=write_proc, args=(w,))
-th.start()
-
-
-tm = Thread(target=manager_proc, args=(w,))
-tm.start()
 
 tw = Thread(target=view_wget(), args=())
 tw.start()

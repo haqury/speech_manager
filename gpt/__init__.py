@@ -1,6 +1,84 @@
 import sys
-from PyQt5 import QtWidgets, QtCore, QtGui
+
+import openai
 from PyQt5.Qt import *
+
+from threading import Thread
+
+app = QApplication(sys.argv)
+
+LANG_RETURN_COMMANDS = ['gpt подскажи', 'repeat it', 'jupiter puscasu', 'подскажи' ]
+LISTNER = ['gpt', 'умничать', 'умный чат',]
+
+def view_wget(w, str, systemMetrics):
+    w.resize(800, 500)
+    w.show()
+    w.move(w.pos().x(), systemMetrics[1]-250)
+    w.lables.insertPlainText(str)
+
+def view_wget_asc(w, systemMetrics):
+    w.resize(600, 100)
+    w.show()
+    w.move(w.pos().x(), systemMetrics[1]-250)
+    w.lables.insertPlainText("[e[v")
+
+
+class GptManager():
+
+    def __init__(self, speech_service, config):
+        self.speech_service = speech_service
+        self.commands = LANG_RETURN_COMMANDS
+        self.process = LISTNER
+        self.openai = openai
+        self.openai.api_key = config.GPT_KEY
+
+    def start(self):
+        self.speech_service.speech('да', self.speech_service.LANG_RUS)
+
+    def is_spec(self, str) -> bool:
+        for c in self.commands:
+            if str.lower().find(c.lower()) != -1:
+                return True
+
+        return False
+    def is_spec_proc(self, name) -> bool:
+        for c in self.process:
+            if c.find(name) != -1:
+                return True
+
+        return False
+
+    def run(self, str, state):
+        w = AscWindow()
+        tw = Thread(target=view_wget_asc(w, state.systemMetrics), args=())
+        tw.start()
+
+    def process_to_run(self, str):
+        result = ""
+        try:
+            result = self.getByString(str, )
+        except:
+            print(str, ": error")
+        # try:
+        #     w = answer.AnswerWindow()
+        #     tw = Thread(target=view_wget(w, result), args=())
+        #     tw.start()
+        # except:
+        #     print(str, ": error")
+        print(result)
+
+    def getByString(self, str, api_key):
+        openai.api_key = api_key
+        print(str, openai)
+        response = openai.Completion.create(
+            engine="text-davinci-002",
+            prompt=str,
+            max_tokens=1024,
+            n=1,
+            stop=None,
+            temperature=0.7,
+        )
+        return response['choices'][0].text
 
 class Widget(QWidget):
     def __init__(self, parent=None):
@@ -64,6 +142,8 @@ class AnswerWindow(QMainWindow):  # QMainWindow  -QWidget
             else:
                 self.move(self.x() + delta.x(), self.y() + delta.y())
                 self.old_Pos = event.globalPos()
+
+
 class AscWindow(QMainWindow):  # QMainWindow  -QWidgetimport sys
     def __init__(self):
         super(AscWindow, self).__init__()

@@ -7,7 +7,6 @@ CASE_DEFAULT = 0
 CASE_CAMEL = 1
 CASE_SNAKE = 2
 
-
 class State():
     def __init__(self, config):
         self.case = 0
