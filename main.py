@@ -9,7 +9,7 @@ import state
 import error
 import listner
 import speech_recognition as sr
-from pythonProject import subtitle_speach
+import subtitle_speach
 
 from PyQt5.Qt import *
 from threading import Thread
