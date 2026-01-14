@@ -1,15 +1,15 @@
-PyAudio
 PyAutoGUI
 PyQt5
 numpy
 pyglet
 telegram
-pypiwin32
+pywin32
 pyperclip
 openai
 keyboard
 gTTS
-DearWidgetTemplate @ git+https://github.com/haqury/DearWidgetTemplate@0.1
-SpeachToTextWidget @ git+https://github.com/haqury/SpeachToTextWidget@0.1
-ConfigManager @ git+https://github.com/haqury/ConfigManager@0.1
-DeskManager @ git+https://github.com/haqury/DeskManager@0.1
+speechrecognition
+DearWidgetTemplate @ git+https://github.com/haqury/DearWidgetTemplate@v0.0.1
+SpeachToTextWidget @ git+https://github.com/haqury/SpeachToTextWidget@v0.0.1
+ConfigManager @ git+https://github.com/haqury/ConfigManager@v0.0.1
+DeskManager @ git+https://github.com/haqury/DeskManager@v0.0.1
