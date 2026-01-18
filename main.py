@@ -15,28 +15,42 @@ import speech_recognition as sr
 
 import subtitle_speach
 import dialog_speach
+import settings_window
 
 from PyQt5.Qt import *
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from threading import Thread
 
 r = sr.Recognizer()
 
-conf = config.Config
+conf = config.Config()  # Создаем экземпляр Config
 state = s.State(conf)
 
 app = QApplication(sys.argv)
+app.setQuitOnLastWindowClosed(False)  # Не закрывать приложение при закрытии окна
+
+# Проверка поддержки системного трея
+if not QSystemTrayIcon.isSystemTrayAvailable():
+    QMessageBox.critical(None, "Speech Manager", 
+                        "Системный трей недоступен на этой системе.")
+    sys.exit(1)
 
 logger = error.Logger()
 audio_data = None
 audio_data_output = None
 
+# Флаг для завершения потоков
+shutdown_flag = False
+
 
 def manager_proc(w):
     print('manager_proc: start')
     global state
+    global shutdown_flag
     m = manager.Managers(w)
     curr_manager = m
-    while 1:
+    while not shutdown_flag:
         if state.listner != 'manager':
             time.sleep(3)
             continue
@@ -84,7 +98,8 @@ def write_proc(w):
     print('write_proc: start')
     global state
     global audio_data
-    while 1:
+    global shutdown_flag
+    while not shutdown_flag:
         if audio_data is None:
             time.sleep(0.5)
             continue
@@ -174,8 +189,121 @@ w = subtitle_speach.MainWindow()
 
 l = listner.ListnerManger(state, w)
 
-# Запускает слушатель
-keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list(l))
+# Создание иконки для системного трея
+def create_tray_icon():
+    # Создаем простую иконку (можно заменить на файл .ico позже)
+    pixmap = QPixmap(16, 16)
+    pixmap.fill(QColor(70, 130, 180))  # Цвет steelblue
+    icon = QIcon(pixmap)
+    
+    # Альтернатива: можно использовать встроенную иконку
+    # icon = QIcon.fromTheme("microphone")  # Если есть системная иконка
+    
+    tray_icon = QSystemTrayIcon(icon, app)
+    tray_icon.setToolTip("Speech Manager")
+    
+    # Окно настроек (будет создано при первом использовании)
+    settings_win = None
+    
+    def open_settings():
+        nonlocal settings_win
+        # Создаем новое окно настроек каждый раз (QDialog)
+        settings_win = settings_window.SettingsWindow(conf)
+        # Центрируем окно на экране
+        screen = QApplication.desktop().screenGeometry()
+        settings_win.move(
+            screen.center() - settings_win.rect().center()
+        )
+        # exec_() делает окно модальным и блокирует до закрытия
+        settings_win.exec_()
+    
+    # Создаем контекстное меню
+    menu = QMenu()
+    
+    # Действие "Настройки" - открывается при клике на иконку
+    settings_action = QAction("Настройки", w)
+    settings_action.triggered.connect(open_settings)
+    menu.addAction(settings_action)
+    
+    menu.addSeparator()
+    
+    # Действие "Показать/Скрыть"
+    show_action = QAction("Показать окно", w)
+    hide_action = QAction("Скрыть окно", w)
+    
+    def toggle_window():
+        if w.isVisible():
+            w.hide()
+            show_action.setVisible(True)
+            hide_action.setVisible(False)
+        else:
+            w.show()
+            w.activateWindow()
+            show_action.setVisible(False)
+            hide_action.setVisible(True)
+    
+    show_action.triggered.connect(toggle_window)
+    hide_action.triggered.connect(toggle_window)
+    
+    hide_action.setVisible(False)  # Изначально окно видимо
+    menu.addAction(show_action)
+    menu.addAction(hide_action)
+    
+    menu.addSeparator()
+    
+    # Действие "Выход"
+    def quit_application():
+        global shutdown_flag
+        shutdown_flag = True
+        # Удаляем хоткей (библиотека keyboard автоматически завершит поток)
+        try:
+            # Просто завершаем приложение - keyboard сам закроет хоткеи
+            pass
+        except:
+            pass
+        # Выходим из приложения
+        QApplication.quit()
+    
+    quit_action = QAction("Выход", w)
+    quit_action.triggered.connect(quit_application)
+    menu.addAction(quit_action)
+    
+    tray_icon.setContextMenu(menu)
+    
+    # Клик по иконке открывает настройки, двойной клик - показывает/скрывает окно
+    def on_icon_activated(reason):
+        if reason == QSystemTrayIcon.Trigger:
+            # Одинарный клик - открываем настройки
+            open_settings()
+        elif reason == QSystemTrayIcon.DoubleClick:
+            # Двойной клик - показываем/скрываем окно
+            toggle_window()
+    
+    tray_icon.activated.connect(on_icon_activated)
+    
+    # Показываем иконку в трее
+    tray_icon.show()
+    
+    return tray_icon
+
+# Создаем иконку в трее
+tray_icon = create_tray_icon()
+
+# Переопределяем закрытие окна - сворачиваем в трей вместо закрытия
+def closeEvent(event):
+    event.ignore()
+    w.hide()
+    tray_icon.showMessage(
+        "Speech Manager",
+        "Приложение свернуто в системный трей",
+        QSystemTrayIcon.Information,
+        2000
+    )
+
+w.closeEvent = closeEvent
+
+# Запускает слушатель - сохраняем handle для удаления при выходе
+hotkey_handle = keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list(l))
 
 th = Thread(target=write_proc, args=(w,))
 th.start()

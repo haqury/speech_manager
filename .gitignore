@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+promt.txt
 
 # C extensions
 *.so
