@@ -196,7 +196,12 @@ class ListnerManger():
                 return m.run()
 
     def send_to_telegram(self):
-        bot = telegram.Bot(token='5911315799:AAGwigQbxl_t2Q-Tm10bK671Gcq3-PXAEp4')
+        import os
+        token = os.getenv('TELEGRAM_BOT_TOKEN', '')
+        # TODO: Remove hardcoded token - use environment variable or config file
+        if not token:
+            raise ValueError("TELEGRAM_BOT_TOKEN environment variable is not set")
+        bot = telegram.Bot(token=token)
 
         code = '''
         def greet(name):

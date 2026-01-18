@@ -1,11 +1,15 @@
 import openai
+import os
 
-# Get API key
+# Get API key from environment variable
 # secrets = openai_secret_manager.get_secrets("openai")
-api_key = ' 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'
+api_key = os.getenv('OPENAI_API_KEY', '')
+# TODO: Remove hardcoded key - use environment variable or config file
 
 
 def getByString(str):
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY environment variable is not set")
     openai.api_key = api_key
     print(str, openai)
     response = openai.Completion.create(
