@@ -12,7 +12,7 @@
 
 1. Клонируйте репозиторий:
 ```bash
-git clone <repository-url>
+git clone https://github.com/haqury/speech_manager.git
 cd speech_manager
 ```
 
