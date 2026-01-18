@@ -99,6 +99,21 @@ class SettingsWindow(QDialog):
             QScrollArea > QWidget > QWidget {
                 background-color: rgba(25, 30, 40, 230);
             }
+            QCheckBox {
+                color: white;
+                font-size: 12px;
+                spacing: 8px;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border: 2px solid #6A1B9A;
+                border-radius: 4px;
+                background-color: rgba(40, 45, 55, 180);
+            }
+            QCheckBox::indicator:checked {
+                background-color: #6A1B9A;
+            }
         """)
         
         # Принудительно устанавливаем темный фон для основного виджета
@@ -170,7 +185,43 @@ class SettingsWindow(QDialog):
         appearance_layout.addWidget(max_messages_spin, 2, 1, 1, 2)
         self.controls['max_messages'] = max_messages_spin
         
+        # Длительность отображения (0 = не пропадать)
+        appearance_layout.addWidget(QLabel("Длительность отображения (сек, 0=не пропадать):"), 3, 0)
+        
+        auto_hide_duration_spin = QSpinBox()
+        auto_hide_duration_spin.setRange(0, 300)
+        auto_hide_duration_spin.setValue(self.config.auto_hide_duration)
+        auto_hide_duration_spin.setFixedWidth(70)
+        auto_hide_duration_spin.setToolTip("0 = окно не будет автоматически скрываться")
+        
+        appearance_layout.addWidget(auto_hide_duration_spin, 3, 1, 1, 2)
+        self.controls['auto_hide_duration'] = auto_hide_duration_spin
+        
         scroll_layout.addWidget(appearance_group)
+        
+        # ==== ГРУППА: Вывод сообщений ====
+        output_group = QGroupBox("Вывод сообщений")
+        output_layout = QVBoxLayout(output_group)
+        output_layout.setSpacing(8)
+        output_layout.setContentsMargins(12, 15, 12, 12)
+        
+        # Чекбоксы для выбора куда вводить сообщение
+        output_interface_checkbox = QCheckBox("Интерфейс (показывать в окне)")
+        output_interface_checkbox.setChecked(self.config.output_interface)
+        output_layout.addWidget(output_interface_checkbox)
+        self.controls['output_interface'] = output_interface_checkbox
+        
+        output_clipboard_checkbox = QCheckBox("Буфер обмена (копировать)")
+        output_clipboard_checkbox.setChecked(self.config.output_clipboard)
+        output_layout.addWidget(output_clipboard_checkbox)
+        self.controls['output_clipboard'] = output_clipboard_checkbox
+        
+        output_text_cursor_checkbox = QCheckBox("Текстовый курсор (вводить в активное поле)")
+        output_text_cursor_checkbox.setChecked(self.config.output_text_cursor)
+        output_layout.addWidget(output_text_cursor_checkbox)
+        self.controls['output_text_cursor'] = output_text_cursor_checkbox
+        
+        scroll_layout.addWidget(output_group)
         
         # ==== ГРУППА: Распознавание речи ====
         recognition_group = QGroupBox("Распознавание речи")
@@ -331,6 +382,8 @@ class SettingsWindow(QDialog):
                 value = control.value()
             elif isinstance(control, QSlider):
                 value = control.value()
+            elif isinstance(control, QCheckBox):
+                value = control.isChecked()
             else:
                 value = control.value()
             

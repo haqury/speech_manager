@@ -1,4 +1,5 @@
 from PyQt5.Qt import *
+from PyQt5.QtCore import pyqtSlot
 import pyperclip as pc
 import numpy as np
 
@@ -27,12 +28,18 @@ class MessageLabel(QLabel):
 
 
 class MainWindow(QMainWindow):  # QMainWindow  -QWidget
-    def __init__(self):
+    def __init__(self, config=None):
         super(MainWindow, self).__init__()
+        self.config = config
         self.centralwidget = QWidget()
         self.setCentralWidget(self.centralwidget)
 
         self.message_fields = []
+        
+        # Таймер для автоматического скрытия
+        self.hide_timer = QTimer(self)
+        self.hide_timer.timeout.connect(self.hide)
+        self.hide_timer.setSingleShot(True)
 
         self.widget = Widget(self)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
@@ -53,9 +60,24 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
 
                     }
                 """)
+        # Делаем statelbl кликабельным для сворачивания
+        self.statelbl.setCursor(Qt.PointingHandCursor)
         layout.addWidget(self.statelbl)
 
         self.statelbl.setText("speech-to-text off")
+        
+        # Обработчик клика на statelbl для сворачивания (левый клик) и контекстного меню (правый клик)
+        self.context_menu = None  # Будет установлено из main.py
+        
+        def on_statelbl_clicked(event):
+            if event.button() == Qt.LeftButton:
+                # Левый клик - сворачивание
+                self.hide()
+            elif event.button() == Qt.RightButton:
+                # Правый клик - контекстное меню
+                if self.context_menu:
+                    self.context_menu.exec_(event.globalPos())
+        self.statelbl.mousePressEvent = on_statelbl_clicked
 
         self.labels = [MessageLabel(self) for i in range(3)]
         for i, lbl in enumerate(self.labels):
@@ -75,21 +97,109 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         self.setWindowFlags(Qt.Tool |
                             Qt.FramelessWindowHint |
                             Qt.WindowStaysOnTopHint)
+        
+        # Применяем настройки при инициализации
+        self.apply_config_settings()
 
     def addAnswer(self, str):
         lbl = self.getNextLabel()
         lbl.setText(str)
+        self.schedule_auto_hide()
+    
+    def schedule_auto_hide(self):
+        """Запускает таймер автоматического скрытия на основе настроек"""
+        if not self.config:
+            return
+        
+        if self.config.auto_hide_duration > 0:
+            # Используем QMetaObject.invokeMethod для вызова из главного потока Qt
+            # Это безопасно работает даже если вызывается из другого потока
+            duration_ms = int(self.config.auto_hide_duration * 1000)
+            QMetaObject.invokeMethod(self, "_start_hide_timer", Qt.QueuedConnection, Q_ARG(int, duration_ms))
+    
+    @pyqtSlot(int)
+    def _start_hide_timer(self, duration_ms):
+        """Запускает таймер - вызывается из главного потока Qt"""
+        # Останавливаем предыдущий таймер если он запущен
+        self.hide_timer.stop()
+        # Запускаем новый таймер
+        self.hide_timer.start(duration_ms)
+    
+    def apply_config_settings(self):
+        """Применяет настройки из config к окну"""
+        if not self.config:
+            return
+        
+        # Применяем прозрачность окна
+        self.setWindowOpacity(self.config.opacity)
+        
+        # Применяем размер шрифта ко всем лейблам
+        font_size = self.config.font_size
+        font_size_str = f"{font_size}px"
+        
+        # Обновляем стиль statelbl
+        self.statelbl.setStyleSheet(f"""
+            QLabel {{
+                font-family: 'Consolas';
+                background-color: rgba(0, 0, 0,  40);
+                color: red;
+                font-size: {font_size_str};
+            }}
+        """)
+        
+        # Обновляем стиль всех labels с сообщениями
+        for lbl in self.labels:
+            lbl.setStyleSheet(f"""
+                QLabel {{
+                    font-family: 'Consolas';
+                    background-color: rgba(0, 0, 0,  40);
+                    color: green;
+                    font-size: {font_size_str};
+                }}
+            """)
+        
+        # Управляем количеством labels на основе max_messages
+        # Если max_messages меньше текущего количества, удаляем лишние
+        # Если больше - добавляем новые (максимум до разумного предела, например 10)
+        current_count = len(self.labels)
+        target_count = min(max(self.config.max_messages, 1), 10)  # От 1 до 10
+        
+        if target_count < current_count:
+            # Удаляем лишние (но сохраняем минимум структуру)
+            pass  # Оставляем как есть, просто не используем лишние
+        elif target_count > current_count:
+            # Добавляем новые labels
+            layout = self.centralwidget.layout()
+            for i in range(current_count, target_count):
+                new_lbl = MessageLabel(self)
+                new_lbl.setStyleSheet(f"""
+                    QLabel {{
+                        font-family: 'Consolas';
+                        background-color: rgba(0, 0, 0,  40);
+                        color: green;
+                        font-size: {font_size_str};
+                    }}
+                """)
+                # Вставляем перед stretch
+                layout.insertWidget(layout.count() - 1, new_lbl)
+                self.labels.append(new_lbl)
 
     def getNextLabel(self) -> QLabel:
-        for a in self.labels:
+        # Определяем сколько labels нужно использовать на основе max_messages
+        max_labels = min(len(self.labels), self.config.max_messages if self.config else len(self.labels))
+        labels_to_use = self.labels[:max_labels]
+        
+        # Ищем пустой label
+        for a in labels_to_use:
             if not a.text():
                 return a
 
+        # Если все заполнены, сдвигаем вверх
         i = 0
-        while i < len(self.labels):
-            if i + 1 == len(self.labels):
-                return self.labels[i]
-            self.labels[i].setText(self.labels[i + 1].text())
+        while i < len(labels_to_use):
+            if i + 1 == len(labels_to_use):
+                return labels_to_use[i]
+            labels_to_use[i].setText(labels_to_use[i + 1].text())
             i += 1
 
     def mousePressEvent(self, event):

@@ -9,6 +9,7 @@ import state
 from listner import project_manager, case_manager, dubler_manager, config_manager
 import telegram
 import pyautogui
+import keyboard
 import manager.gpt as gpt
 
 import speech_recognition as sr
@@ -80,13 +81,65 @@ class ListnerManger():
         print(string)
 
     def save(self, str):
-        try:
-            pc.copy(str)
-        except:
-            pyautogui.typewrite(str)
-
+        # Проверяем что текст не пустой
+        if not str or not str.strip():
+            return
+            
+        config = self.state.Config if hasattr(self.state, 'Config') else None
+        
+        if not config:
+            return
+        
+        # Копируем в буфер обмена, если включено
+        if config.output_clipboard:
+            try:
+                pc.copy(str)
+            except Exception as e:
+                print(f"Ошибка копирования в буфер обмена: {e}")
+        
+        # Вставляем в текстовый курсор, если включено
+        if config.output_text_cursor:
+            try:
+                # Всегда копируем текст в буфер обмена перед вставкой (даже если output_clipboard включен)
+                # Это гарантирует, что текст точно будет в буфере при вставке
+                pc.copy(str)
+                # Задержка для надежного копирования
+                time.sleep(0.15)
+                
+                # Проверяем что текст действительно в буфере
+                try:
+                    clipboard_check = pc.paste()
+                    if clipboard_check != str:
+                        # Если текст не совпадает, копируем еще раз
+                        pc.copy(str)
+                        time.sleep(0.15)
+                except:
+                    pass
+                
+                # Вставляем через Ctrl+V
+                # Используем keyboard вместо pyautogui для более надежной работы
+                try:
+                    # Используем keyboard для надежной отправки
+                    keyboard.send('ctrl+v')
+                    time.sleep(0.1)
+                except:
+                    # Fallback на pyautogui
+                    try:
+                        pyautogui.hotkey('ctrl', 'v')
+                        time.sleep(0.1)
+                    except:
+                        pass
+            except Exception as e:
+                print(f"Ошибка вставки текста в курсор: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Для обратной совместимости с fastWrite
         if self.state.fastWrite:
-            pyautogui.typewrite(str)
+            try:
+                pyautogui.typewrite(str)
+            except:
+                pass
 
         rhis = list(reversed(self.his))
         rhis.append(str)
@@ -96,8 +149,16 @@ class ListnerManger():
 
     def write(self, str):
         # self.window.labels[0].setText(string)
-
-        self.window.addAnswer(str)
+        # Показываем в интерфейсе только если включено в настройках
+        config = self.state.Config if hasattr(self.state, 'Config') else None
+        
+        if config and config.output_interface:
+            self.window.addAnswer(str)
+        else:
+            # Если интерфейс выключен, все равно запускаем автоскрытие для окна (если оно видимо)
+            # Это нужно для корректной работы автоскрытия
+            if self.window.isVisible() and hasattr(self.window, 'schedule_auto_hide'):
+                self.window.schedule_auto_hide()
 
     def last_rebuld(self):
         for str in self.his:

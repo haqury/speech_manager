@@ -23,6 +23,12 @@ class Config():
         self.selected_mic_index = 0
         self.listen_timeout = 10
         self.phrase_time_limit = 10
+        self.auto_hide_duration = 0  # 0 = не пропадать, >0 = пропадать через N секунд
+        
+        # Настройки куда вводить сообщение (multi-checkbox)
+        self.output_interface = True  # Показывать в интерфейсе
+        self.output_clipboard = True  # Копировать в буфер обмена
+        self.output_text_cursor = False  # Вводить в текстовый курсор
         
         # Загружаем сохраненные настройки
         self.load()
@@ -39,7 +45,11 @@ class Config():
             'pause_threshold': self.pause_threshold,
             'selected_mic_index': self.selected_mic_index,
             'listen_timeout': self.listen_timeout,
-            'phrase_time_limit': self.phrase_time_limit
+            'phrase_time_limit': self.phrase_time_limit,
+            'auto_hide_duration': self.auto_hide_duration,
+            'output_interface': self.output_interface,
+            'output_clipboard': self.output_clipboard,
+            'output_text_cursor': self.output_text_cursor
         }
     
     def from_dict(self, data):
@@ -54,6 +64,10 @@ class Config():
         self.selected_mic_index = data.get('selected_mic_index', 0)
         self.listen_timeout = data.get('listen_timeout', 10)
         self.phrase_time_limit = data.get('phrase_time_limit', 10)
+        self.auto_hide_duration = data.get('auto_hide_duration', 0)
+        self.output_interface = data.get('output_interface', True)
+        self.output_clipboard = data.get('output_clipboard', True)
+        self.output_text_cursor = data.get('output_text_cursor', False)
     
     def save(self):
         """Сохраняет конфиг в файл"""

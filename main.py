@@ -152,9 +152,23 @@ def list(m):
 
     with sr.Microphone() as source:
         try:
+            # Показываем окно при активации прослушивания
+            if not m.window.isVisible():
+                m.window.show()
+                m.window.activateWindow()
+                m.window.raise_()
+            
             m.window.statelbl.setText("speech-to-text on")
+            # Сбрасываем таймер скрытия при активации
+            if m.window.config and m.window.config.auto_hide_duration > 0:
+                m.window.hide_timer.stop()
+            
             m.pocessAudio(r.listen(source, phrase_time_limit=8))
             m.window.statelbl.setText("speech-to-text off")
+            
+            # Запускаем таймер скрытия после окончания прослушивания
+            if m.window.config and m.window.config.auto_hide_duration > 0:
+                m.window.schedule_auto_hide()
         except sr.UnknownValueError:
             logger.log("Google Speech Recognition could not understand audio")
             m.window.statelbl.setText("speech-to-text off")
@@ -183,7 +197,7 @@ def view_wget():
 
     sys.exit(app.exec())
 
-w = subtitle_speach.MainWindow()
+w = subtitle_speach.MainWindow(conf)
 # dw = dialog_speach.MainWindow()
 # w = chat.ChatApp()
 
@@ -215,7 +229,10 @@ def create_tray_icon():
             screen.center() - settings_win.rect().center()
         )
         # exec_() делает окно модальным и блокирует до закрытия
-        settings_win.exec_()
+        result = settings_win.exec_()
+        # После сохранения настроек применяем их к окну
+        if result == QDialog.Accepted:
+            w.apply_config_settings()
     
     # Создаем контекстное меню
     menu = QMenu()
@@ -234,11 +251,16 @@ def create_tray_icon():
     def toggle_window():
         if w.isVisible():
             w.hide()
+            # Останавливаем таймер скрытия при скрытии
+            w.hide_timer.stop()
             show_action.setVisible(True)
             hide_action.setVisible(False)
         else:
             w.show()
             w.activateWindow()
+            # Сбрасываем таймер скрытия при показе
+            if w.config and w.config.auto_hide_duration > 0:
+                w.schedule_auto_hide()
             show_action.setVisible(False)
             hide_action.setVisible(True)
     
@@ -270,14 +292,17 @@ def create_tray_icon():
     
     tray_icon.setContextMenu(menu)
     
-    # Клик по иконке открывает настройки, двойной клик - показывает/скрывает окно
+    # Устанавливаем то же меню для контекстного меню header в MainWindow
+    w.context_menu = menu
+    
+    # Клик по иконке показывает основной интерфейс, двойной клик - настройки
     def on_icon_activated(reason):
         if reason == QSystemTrayIcon.Trigger:
-            # Одинарный клик - открываем настройки
-            open_settings()
-        elif reason == QSystemTrayIcon.DoubleClick:
-            # Двойной клик - показываем/скрываем окно
+            # Одинарный клик - показываем основное окно
             toggle_window()
+        elif reason == QSystemTrayIcon.DoubleClick:
+            # Двойной клик - открываем настройки
+            open_settings()
     
     tray_icon.activated.connect(on_icon_activated)
     
