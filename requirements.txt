@@ -1,0 +1,14 @@
+pywin32
+PyAudio
+PyAutoGUI
+PyQt5
+numpy
+pyglet
+telegram
+pypiwin32
+pyperclip
+openai
+keyboard
+gTTS
+pynput
+speech_recognition
