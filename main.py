@@ -138,14 +138,17 @@ def list(m):
     with sr.Microphone() as source:
         try:
             m.window.statelbl.setText("speech-to-text on")
-            m.pocessAudio(r.listen(source, phrase_time_limit=5))
+            m.pocessAudio(r.listen(source, phrase_time_limit=8))
             m.window.statelbl.setText("speech-to-text off")
         except sr.UnknownValueError:
             logger.log("Google Speech Recognition could not understand audio")
+            m.window.statelbl.setText("speech-to-text off")
         except sr.RequestError as e:
             logger.log("Could not request results from Google Speech Recognition service; {0}".format(e))
+            m.window.statelbl.setText("speech-to-text off")
         except OSError as e:
             logger.log("OSError service; {0}".format(e))
+            m.window.statelbl.setText("speech-to-text off")
         # except TypeError as e:
         #     logger.log("TypeError service; {0}".format(e))
 
