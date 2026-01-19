@@ -1,6 +1,4 @@
 import speech_service
-from listner import dubler_manager
-import manager.gpt as gpt
 
 call = ["менеджер "]
 PATH_FILE_SPEECH_FIRST = 'downloads/Warcraft III – Я жажду служить_(mp3phoenix.ru).mp3'
@@ -8,10 +6,7 @@ PATH_FILE_SPEECH_FIRST = 'downloads/Warcraft III – Я жажду служит�
 class Managers():
     def __init__(self, window):
         self.window = window
-        self.managers_process = [
-            dubler_manager.DublerManager(),
-            gpt.GptManager()
-        ]
+        self.managers_process = []
 
     def start(self):
         speech_service.list_file(PATH_FILE_SPEECH_FIRST)

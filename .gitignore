@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 promt.txt
+CODE_REVIEW.md
 
 # C extensions
 *.so

@@ -6,11 +6,9 @@ import pyperclip as pc
 import tkinter as tk
 import speech_service as speach_service
 import state
-from listner import project_manager, case_manager, dubler_manager, config_manager
-import telegram
+from listner import config_manager
 import pyautogui
 import keyboard
-import manager.gpt as gpt
 
 import speech_recognition as sr
 
@@ -27,16 +25,12 @@ class ListnerManger():
         self.his = []
         self.his_arr = []
         self.managers = [
-            case_manager.CaseManager(self),
             speach_service.SpeechService(),
-            dubler_manager.DublerManager(),
-            config_manager.ConfigManger(self),
-            gpt.GptManager()
+            config_manager.ConfigManger(self)
         ]
         self.r = sr.Recognizer()
         self.managers_process = [
-            self,
-            dubler_manager.DublerManager()
+            self
         ]
 
     def process(self, speach_resul):
@@ -194,23 +188,6 @@ class ListnerManger():
         for m in self.managers_process:
             if m.is_spec_proc(self.state.current_manager):
                 return m.run()
-
-    def send_to_telegram(self):
-        import os
-        token = os.getenv('TELEGRAM_BOT_TOKEN', '')
-        # TODO: Remove hardcoded token - use environment variable or config file
-        if not token:
-            raise ValueError("TELEGRAM_BOT_TOKEN environment variable is not set")
-        bot = telegram.Bot(token=token)
-
-        code = '''
-        def greet(name):
-            print("Hello, " + name + "!")
-
-        greet("John")
-        '''
-
-        bot.send_message(chat_id='YOUR_CHAT_ID', text=code)
 
     def pocessAudio(self, data):
         result = self.r.recognize_google(data, language=self.state.get_keyboard_language(), show_all=True)

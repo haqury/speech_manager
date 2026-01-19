@@ -14,7 +14,6 @@ import manager
 import speech_recognition as sr
 
 import subtitle_speach
-import dialog_speach
 import settings_window
 
 from PyQt5.Qt import *
@@ -38,7 +37,6 @@ if not QSystemTrayIcon.isSystemTrayAvailable():
 
 logger = error.Logger()
 audio_data = None
-audio_data_output = None
 
 # Флаг для завершения потоков
 shutdown_flag = False
@@ -186,20 +184,9 @@ def view_wget():
     w.resize(500, 150)
     w.show()
     w.move(GetSystemMetrics(0) - w.size().width(), GetSystemMetrics(1) - 400)
-
-    # dw.resize(500, 150)
-    # dw.show()
-    # dw.move(GetSystemMetrics(0)-w.size().width(), GetSystemMetrics(1)-400)
-
-    # objectName = keybaord.VirtualKeyboard()
-    # objectName.engine()
-    # objectName.start()
-
     sys.exit(app.exec())
 
 w = subtitle_speach.MainWindow(conf)
-# dw = dialog_speach.MainWindow()
-# w = chat.ChatApp()
 
 l = listner.ListnerManger(state, w)
 
@@ -339,5 +326,3 @@ tm.start()
 
 tw = Thread(target=view_wget(), args=())
 tw.start()
-
-external_variable = 0
