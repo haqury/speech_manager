@@ -121,8 +121,8 @@ class ListnerManger():
                     try:
                         pyautogui.hotkey('ctrl', 'v')
                         time.sleep(0.1)
-                    except:
-                        pass
+                    except Exception as e2:
+                        print(f'pyautogui.hotkey also failed: {e2}')
             except Exception as e:
                 print(f"Ошибка вставки текста в курсор: {e}")
                 import traceback
@@ -132,8 +132,8 @@ class ListnerManger():
         if self.state.fastWrite:
             try:
                 pyautogui.typewrite(str)
-            except:
-                pass
+            except Exception as e:
+                print(f'pyautogui.typewrite failed: {e}')
 
         rhis = list(reversed(self.his))
         rhis.append(str)

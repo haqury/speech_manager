@@ -61,8 +61,8 @@ def manager_proc(w):
         ) as source:
             try:
                 curr_manager.start()
-            except:
-                print('not start')
+            except Exception as e:
+                print(f'Manager start failed: {e}')
 
             ad = source.listen(phrase_time_limit=6)
             m.write('record')
@@ -303,8 +303,8 @@ def create_tray_icon():
         try:
             # Просто завершаем приложение - keyboard сам закроет хоткеи
             pass
-        except:
-            pass
+        except Exception as e:
+            print(f'Error during hotkey cleanup: {e}')
         # Выходим из приложения
         QApplication.quit()
     

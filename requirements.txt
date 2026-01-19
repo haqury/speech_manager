@@ -1,12 +1,28 @@
-pywin32
-sounddevice
+# Python 3.14 совместимые зависимости
+# Обновлено: 2026-01-19
+
+# Windows API
+pywin32>=311  # ✅ Python 3.14 wheels доступны
+
+# Аудио
+sounddevice>=0.5.3  # ✅ Python 3.14 совместим
+SpeechRecognition  # ✅ Python 3.14 совместим (latest: 3.14.5)
+
+# UI и графика
+PyQt5>=5.15.10  # ⚠️ Может требовать тестирования на Python 3.14 (latest: 5.15.11)
 PyAutoGUI
-PyQt5
-numpy
+
+# Научные вычисления
+numpy>=2.3.5  # ✅ Python 3.14 официально поддерживается
+
+# Аудио воспроизведение
 pyglet
+
+# Утилиты
 pypiwin32
 pyperclip
-keyboard
-gTTS
-pynput
-speech_recognition
+keyboard  # ⚠️ Требует тестирования на Python 3.14
+pynput>=1.8.1  # ✅ Pure Python, совместим
+
+# Text-to-Speech
+gTTS  # ✅ Pure Python, совместим
