@@ -23,10 +23,6 @@ import state as state
 # Configure logging
 logger = logging.getLogger(__name__)
 
-LANG_RUS = 'ru'
-PATH_FILE_SPEECH = 'downloads/example.mp3'
-RETURN_COMMANDS = ['повтори', 'the fall', 'double or']
-
 # Ensure downloads directory exists
 DOWNLOADS_DIR = Path('downloads')
 DOWNLOADS_DIR.mkdir(exist_ok=True)
@@ -37,24 +33,7 @@ class SpeechService:
     
     def __init__(self) -> None:
         """Initialize speech service."""
-        self.commands = RETURN_COMMANDS
-        self.lang_rus = 'ru'
         self._temp_files = []  # Track temp files for cleanup
-
-    def is_spec(self, text: str) -> bool:
-        """
-        Check if text contains special commands.
-        
-        Args:
-            text: Text to check
-            
-        Returns:
-            True if text contains special commands
-        """
-        for command in self.commands:
-            if command.lower() in text.lower():
-                return True
-        return False
 
     def run(self, text: str) -> None:
         """
@@ -159,63 +138,3 @@ class SpeechService:
             except Exception as e:
                 logger.warning(f"Failed to cleanup {file_path}: {e}")
         self._temp_files.clear()
-
-
-def speech(text: str, language: str):
-    """
-    Legacy function: Synthesize speech with pyglet playback.
-    
-    Args:
-        text: Text to synthesize
-        language: Language code
-        
-    Note: This function has race condition with file deletion.
-          Use SpeechService class instead for better safety.
-    """
-    try:
-        audio = gTTS(text=text, lang=language, slow=False)
-        
-        # Ensure directory exists
-        DOWNLOADS_DIR.mkdir(exist_ok=True)
-        
-        audio.save(PATH_FILE_SPEECH)
-        song = pyglet.media.load(PATH_FILE_SPEECH)
-        song.play()
-        
-        # ✅ FIX: Don't delete immediately - schedule cleanup
-        def delayed_cleanup():
-            time.sleep(5.0)  # Wait for playback
-            try:
-                if os.path.exists(PATH_FILE_SPEECH):
-                    os.remove(PATH_FILE_SPEECH)
-            except Exception as e:
-                logger.warning(f"Failed to cleanup: {e}")
-        
-        threading.Thread(target=delayed_cleanup, daemon=True).start()
-        
-    except Exception as e:
-        logger.error(f"Speech error: {e}", exc_info=True)
-
-
-def list_file(path: str):
-    """
-    Play audio file from path.
-    
-    Args:
-        path: Path to audio file
-    """
-    try:
-        # Validate path
-        audio_path = Path(path)
-        if not audio_path.exists():
-            logger.error(f"Audio file not found: {path}")
-            return
-        
-        song = pyglet.media.load(str(audio_path))
-        song.play()
-        
-    except Exception as e:
-        logger.error(f"Error playing file {path}: {e}", exc_info=True)
-
-
-# ✅ Removed speechOld() - was duplicate with command injection vulnerability
