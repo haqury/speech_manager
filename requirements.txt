@@ -1,5 +1,5 @@
 pywin32
-PyAudio
+sounddevice
 PyAutoGUI
 PyQt5
 numpy

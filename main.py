@@ -12,6 +12,7 @@ import error
 import listner
 import manager
 import speech_recognition as sr
+from audio_recorder import MicrophoneStream
 
 import subtitle_speach
 import settings_window
@@ -53,17 +54,17 @@ def manager_proc(w):
             time.sleep(3)
             continue
 
-        with sr.Microphone() as source:
-            # try:
+        # Используем MicrophoneStream вместо sr.Microphone (PyAudio заменен на SoundDevice)
+        with MicrophoneStream(
+            energy_threshold=conf.energy_threshold,
+            pause_threshold=conf.pause_threshold
+        ) as source:
             try:
                 curr_manager.start()
             except:
                 print('not start')
-            # if curr_manager == m:
-            #     speech_service.list_file(PATH_FILE_SPEECH_FIRST)
-            # speech_service.speech('выберите менеджера', 'ru')
 
-            ad = r.listen(source, phrase_time_limit=6)
+            ad = source.listen(phrase_time_limit=6)
             m.write('record')
             result = r.recognize_google(ad, language=state.get_keyboard_language(), show_all=True)
             str = l.get_string(speach_resul=result)
@@ -148,7 +149,41 @@ def listed():
 def list(m):
     global audio_data
 
-    with sr.Microphone() as source:
+    # Callback функции для синхронизации UI с состоянием записи
+    def on_speech_start():
+        """Вызывается когда начинается реальная запись речи"""
+        try:
+            from PyQt5.QtCore import QMetaObject, Qt
+            # Используем invokeMethod для безопасного обновления UI из другого потока
+            QMetaObject.invokeMethod(
+                m.window.statelbl,
+                "setText",
+                Qt.QueuedConnection,
+                "speech-to-text on"
+            )
+        except Exception as e:
+            print(f"Error updating UI on speech start: {e}")
+    
+    def on_speech_end():
+        """Вызывается когда заканчивается запись речи"""
+        try:
+            from PyQt5.QtCore import QMetaObject, Qt
+            QMetaObject.invokeMethod(
+                m.window.statelbl,
+                "setText",
+                Qt.QueuedConnection,
+                "speech-to-text off"
+            )
+        except Exception as e:
+            print(f"Error updating UI on speech end: {e}")
+
+    # Используем MicrophoneStream вместо sr.Microphone (PyAudio заменен на SoundDevice)
+    with MicrophoneStream(
+        energy_threshold=m.window.config.energy_threshold if m.window.config else 300,
+        pause_threshold=m.window.config.pause_threshold if m.window.config else 0.8,
+        on_speech_start=on_speech_start,
+        on_speech_end=on_speech_end
+    ) as source:
         try:
             # Показываем окно при активации прослушивания
             if not m.window.isVisible():
@@ -156,12 +191,12 @@ def list(m):
                 m.window.activateWindow()
                 m.window.raise_()
             
-            m.window.statelbl.setText("speech-to-text on")
+            m.window.statelbl.setText("Listening...")
             # Сбрасываем таймер скрытия при активации
             if m.window.config and m.window.config.auto_hide_duration > 0:
                 m.window.hide_timer.stop()
             
-            m.pocessAudio(r.listen(source, phrase_time_limit=8))
+            m.pocessAudio(source.listen(phrase_time_limit=8))
             m.window.statelbl.setText("speech-to-text off")
             
             # Запускаем таймер скрытия после окончания прослушивания
