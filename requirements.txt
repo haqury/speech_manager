@@ -23,6 +23,7 @@ pypiwin32
 pyperclip
 keyboard  # ⚠️ Требует тестирования на Python 3.14
 pynput>=1.8.1  # ✅ Pure Python, совместим
+tenacity>=8.2.3  # ✅ Retry механизм для API вызовов
 
 # Text-to-Speech
 gTTS  # ✅ Pure Python, совместим

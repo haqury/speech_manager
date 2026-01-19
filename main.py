@@ -10,32 +10,35 @@ Speech Manager - приложение для распознавания речи
 """
 import sys
 import time
-from typing import Optional
+import logging
 from win32api import GetSystemMetrics
 import keyboard
-from pynput import keyboard as hotkeyPackage
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 import config
-
 import state as s
-import error
 import listner
 import speech_recognition as sr
 from audio_recorder import MicrophoneStream
-
 import subtitle_speach
 import settings_window
 
 from PyQt5.Qt import *
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
-from threading import Thread
 
 # Modern threading для Python 3.14+
 from threading_manager import (
     ThreadManager,
     print_threading_info
 )
+
+# Logging configuration
+from logger_config import setup_logging, get_logger
+
+# Setup logging
+setup_logging(log_file='speech_manager.log', level=logging.INFO)
+logger = get_logger(__name__)
 
 
 r = sr.Recognizer()
@@ -51,8 +54,6 @@ if not QSystemTrayIcon.isSystemTrayAvailable():
     QMessageBox.critical(None, "Speech Manager", 
                         "Системный трей недоступен на этой системе.")
     sys.exit(1)
-
-logger = error.Logger()
 
 # Современная многопоточность для Python 3.14+
 thread_manager = ThreadManager()
@@ -128,12 +129,13 @@ def process_speech(m: listner.ListnerManger) -> None:
                 
                 # Обрабатываем результат
                 m.process(result)
+                logger.info("Speech recognition successful")
             except sr.UnknownValueError:
-                print("Google Speech Recognition could not understand audio")
+                logger.warning("Google Speech Recognition could not understand audio")
             except sr.RequestError as e:
-                print(f"Could not request results from Google Speech Recognition: {e}")
+                logger.error(f"Network error with Google Speech Recognition: {e}", exc_info=True)
             except Exception as e:
-                print(f"Error processing speech: {e}")
+                logger.error(f"Unexpected error during speech recognition: {e}", exc_info=True)
             
             m.window.statelbl.setText("speech-to-text off")
             
@@ -141,13 +143,13 @@ def process_speech(m: listner.ListnerManger) -> None:
             if m.window.config and m.window.config.auto_hide_duration > 0:
                 m.window.schedule_auto_hide()
         except sr.UnknownValueError:
-            logger.log("Google Speech Recognition could not understand audio")
+            logger.warning("Google Speech Recognition could not understand audio")
             m.window.statelbl.setText("speech-to-text off")
         except sr.RequestError as e:
-            logger.log("Could not request results from Google Speech Recognition service; {0}".format(e))
+            logger.error(f"Network error with Google Speech Recognition: {e}", exc_info=True)
             m.window.statelbl.setText("speech-to-text off")
         except OSError as e:
-            logger.log("OSError service; {0}".format(e))
+            logger.error(f"OSError: {e}", exc_info=True)
             m.window.statelbl.setText("speech-to-text off")
         # except TypeError as e:
         #     logger.log("TypeError service; {0}".format(e))
@@ -262,9 +264,9 @@ def create_tray_icon() -> QSystemTrayIcon:
             
             # Регистрируем новую
             hotkey_handle = keyboard.add_hotkey(conf.hotkey, lambda: process_speech(l))
-            print(f"Hotkey reloaded: {conf.hotkey}")
+            logger.info(f"Hotkey reloaded: {conf.hotkey}")
         except Exception as e:
-            print(f"Error reloading hotkey: {e}")
+            logger.error(f"Error reloading hotkey: {e}", exc_info=True)
     
     # Сохраняем функцию reload_hotkey в settings_win для вызова после сохранения
     def open_settings_with_reload() -> None:
@@ -337,7 +339,7 @@ w.closeEvent = closeEvent
 # Запускает слушатель - сохраняем handle для удаления при выходе
 # Используем горячую клавишу из конфигурации
 hotkey_handle = keyboard.add_hotkey(conf.hotkey, lambda: process_speech(l))
-print(f"Hotkey registered: {conf.hotkey}")
+logger.info(f"Hotkey registered: {conf.hotkey}")
 
 # ✅ Qt GUI должен быть в главном потоке, не в worker thread!
 # Запускаем view_wget() в главном потоке (он содержит app.exec())

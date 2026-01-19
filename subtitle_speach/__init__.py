@@ -1,7 +1,6 @@
 from PyQt5.Qt import *
 from PyQt5.QtCore import pyqtSlot
 import pyperclip as pc
-import numpy as np
 
 
 class Widget(QWidget):

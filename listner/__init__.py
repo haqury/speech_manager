@@ -4,19 +4,19 @@
 Содержит ListnerManger класс, который обрабатывает результаты распознавания
 и выводит текст в различные места (UI, буфер обмена, текстовый курсор).
 """
-import string
 import time
-from threading import Thread
-from typing import Dict, List, Optional, Any
+from typing import Dict, Any, Optional
 
 import pyperclip as pc
-import tkinter as tk
-import speech_service as speach_service
 import state
 import pyautogui
 import keyboard
 
 import speech_recognition as sr
+
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class ListnerManger:
@@ -104,7 +104,7 @@ class ListnerManger:
             try:
                 pc.copy(text)
             except Exception as e:
-                print(f"Ошибка копирования в буфер обмена: {e}")
+                logger.error(f"Ошибка копирования в буфер обмена: {e}", exc_info=True)
         
         # Вставляем в текстовый курсор, если включено
         if config.output_text_cursor:
