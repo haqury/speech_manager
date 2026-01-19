@@ -327,6 +327,93 @@ class SettingsWindow(QDialog):
         
         scroll_layout.addWidget(timeout_group)
         
+        # ==== ГРУППА: Горячая клавиша ====
+        hotkey_group = QGroupBox("⌨️ Горячая клавиша")
+        hotkey_layout = QVBoxLayout(hotkey_group)
+        hotkey_layout.setSpacing(8)
+        hotkey_layout.setContentsMargins(12, 15, 12, 12)
+        
+        # Описание
+        hotkey_description = QLabel(
+            "Комбинация клавиш для активации распознавания речи.\n"
+            "Используйте модификаторы: ctrl, alt, shift, win + клавиша.\n"
+            "Примеры: ctrl+shift+f5, ctrl+alt+space, win+shift+r"
+        )
+        hotkey_description.setWordWrap(True)
+        hotkey_description.setStyleSheet("color: rgba(255, 255, 255, 180); font-size: 10px; padding: 5px;")
+        hotkey_layout.addWidget(hotkey_description)
+        
+        # Поле для ввода горячей клавиши
+        hotkey_container = QWidget()
+        hotkey_container_layout = QHBoxLayout(hotkey_container)
+        hotkey_container_layout.setContentsMargins(0, 0, 0, 0)
+        hotkey_container_layout.setSpacing(10)
+        
+        hotkey_label = QLabel("Комбинация:")
+        hotkey_container_layout.addWidget(hotkey_label)
+        
+        self.hotkey_input = QLineEdit()
+        self.hotkey_input.setText(self.config.hotkey)
+        self.hotkey_input.setPlaceholderText("ctrl+shift+win+f5")
+        self.hotkey_input.setToolTip("Введите комбинацию клавиш, например: ctrl+shift+f5")
+        hotkey_container_layout.addWidget(self.hotkey_input)
+        
+        # Кнопка "Записать" для захвата нажатия клавиш
+        self.record_hotkey_btn = QPushButton("🎤 Записать")
+        self.record_hotkey_btn.setToolTip("Нажмите и затем нажмите желаемую комбинацию клавиш")
+        self.record_hotkey_btn.setFixedWidth(120)
+        self.record_hotkey_btn.clicked.connect(self.start_recording_hotkey)
+        hotkey_container_layout.addWidget(self.record_hotkey_btn)
+        
+        hotkey_layout.addWidget(hotkey_container)
+        
+        # Статус записи
+        self.hotkey_status = QLabel("")
+        self.hotkey_status.setStyleSheet("color: #6A1B9A; font-size: 11px; padding: 5px;")
+        self.hotkey_status.setVisible(False)
+        hotkey_layout.addWidget(self.hotkey_status)
+        
+        # Популярные комбинации
+        popular_hotkeys_label = QLabel("Популярные комбинации:")
+        popular_hotkeys_label.setStyleSheet("color: rgba(255, 255, 255, 200); font-size: 11px; margin-top: 5px;")
+        hotkey_layout.addWidget(popular_hotkeys_label)
+        
+        popular_container = QWidget()
+        popular_layout = QHBoxLayout(popular_container)
+        popular_layout.setContentsMargins(0, 0, 0, 0)
+        popular_layout.setSpacing(5)
+        
+        popular_hotkeys = [
+            "ctrl+shift+win+f5",
+            "ctrl+alt+space",
+            "ctrl+shift+r",
+            "win+shift+s"
+        ]
+        
+        for hotkey in popular_hotkeys:
+            btn = QPushButton(hotkey)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(106, 27, 154, 100);
+                    border: 1px solid #6A1B9A;
+                    border-radius: 4px;
+                    padding: 4px 8px;
+                    font-size: 10px;
+                }
+                QPushButton:hover {
+                    background-color: rgba(106, 27, 154, 150);
+                }
+            """)
+            btn.clicked.connect(lambda checked, h=hotkey: self.hotkey_input.setText(h))
+            popular_layout.addWidget(btn)
+        
+        popular_layout.addStretch()
+        hotkey_layout.addWidget(popular_container)
+        
+        self.controls['hotkey'] = self.hotkey_input
+        
+        scroll_layout.addWidget(hotkey_group)
+        
         scroll_layout.addStretch()
         scroll.setWidget(scroll_content)
         main_layout.addWidget(scroll)
@@ -371,6 +458,79 @@ class SettingsWindow(QDialog):
         
         main_layout.addWidget(button_widget)
     
+    def start_recording_hotkey(self):
+        """Начинает запись горячей клавиши."""
+        self.record_hotkey_btn.setText("⏺ Нажмите клавиши...")
+        self.record_hotkey_btn.setEnabled(False)
+        self.hotkey_status.setText("Ожидание нажатия клавиш...")
+        self.hotkey_status.setVisible(True)
+        
+        # Устанавливаем фокус на окно для захвата клавиш
+        self.setFocus()
+        self.is_recording_hotkey = True
+        self.recorded_keys = []
+    
+    def keyPressEvent(self, event):
+        """Обрабатывает нажатия клавиш для записи горячей клавиши."""
+        if not hasattr(self, 'is_recording_hotkey') or not self.is_recording_hotkey:
+            super().keyPressEvent(event)
+            return
+        
+        # Словарь для преобразования Qt клавиш в формат keyboard
+        key_map = {
+            Qt.Key_Control: 'ctrl',
+            Qt.Key_Alt: 'alt',
+            Qt.Key_Shift: 'shift',
+            Qt.Key_Meta: 'win',
+            Qt.Key_F1: 'f1', Qt.Key_F2: 'f2', Qt.Key_F3: 'f3', Qt.Key_F4: 'f4',
+            Qt.Key_F5: 'f5', Qt.Key_F6: 'f6', Qt.Key_F7: 'f7', Qt.Key_F8: 'f8',
+            Qt.Key_F9: 'f9', Qt.Key_F10: 'f10', Qt.Key_F11: 'f11', Qt.Key_F12: 'f12',
+            Qt.Key_Space: 'space',
+            Qt.Key_Return: 'enter',
+            Qt.Key_Enter: 'enter',
+            Qt.Key_Tab: 'tab',
+            Qt.Key_Backspace: 'backspace',
+            Qt.Key_Delete: 'delete',
+            Qt.Key_Insert: 'insert',
+            Qt.Key_Home: 'home',
+            Qt.Key_End: 'end',
+            Qt.Key_PageUp: 'page up',
+            Qt.Key_PageDown: 'page down',
+        }
+        
+        modifiers = []
+        if event.modifiers() & Qt.ControlModifier:
+            modifiers.append('ctrl')
+        if event.modifiers() & Qt.AltModifier:
+            modifiers.append('alt')
+        if event.modifiers() & Qt.ShiftModifier:
+            modifiers.append('shift')
+        if event.modifiers() & Qt.MetaModifier:
+            modifiers.append('win')
+        
+        # Получаем основную клавишу
+        key = event.key()
+        key_str = key_map.get(key, event.text().lower())
+        
+        # Игнорируем если только модификаторы
+        if key in [Qt.Key_Control, Qt.Key_Alt, Qt.Key_Shift, Qt.Key_Meta]:
+            return
+        
+        # Формируем hotkey строку
+        if modifiers and key_str:
+            hotkey = '+'.join(modifiers + [key_str])
+            self.hotkey_input.setText(hotkey)
+            self.hotkey_status.setText(f"✅ Записано: {hotkey}")
+            self.hotkey_status.setStyleSheet("color: #4CAF50; font-size: 11px; padding: 5px;")
+        else:
+            self.hotkey_status.setText("❌ Нужна комбинация с модификатором")
+            self.hotkey_status.setStyleSheet("color: #F44336; font-size: 11px; padding: 5px;")
+        
+        # Сбрасываем режим записи
+        self.is_recording_hotkey = False
+        self.record_hotkey_btn.setText("🎤 Записать")
+        self.record_hotkey_btn.setEnabled(True)
+    
     def save_settings(self):
         """Сохраняет настройки в конфиг"""
         # Сохраняем значения из всех контролов
@@ -384,6 +544,9 @@ class SettingsWindow(QDialog):
                 value = control.value()
             elif isinstance(control, QCheckBox):
                 value = control.isChecked()
+            elif isinstance(control, QLineEdit):
+                # ✅ Поддержка QLineEdit для hotkey
+                value = control.text()
             else:
                 value = control.value()
             

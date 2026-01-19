@@ -158,19 +158,17 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
                 }}
             """)
         
-        # Управляем количеством labels на основе max_messages
-        # Если max_messages меньше текущего количества, удаляем лишние
-        # Если больше - добавляем новые (максимум до разумного предела, например 10)
+        # ✅ FIX: Управляем количеством labels с cleanup старых
         current_count = len(self.labels)
-        target_count = min(max(self.config.max_messages, 1), 10)  # От 1 до 10
+        target_count = min(max(self.config.max_messages, 1), 100)  # От 1 до 100 (было 10)
         
         if target_count < current_count:
-            # Удаляем лишние (но сохраняем минимум структуру)
-            pass  # Оставляем как есть, просто не используем лишние
+            # ✅ FIX: Удаляем лишние labels для предотвращения утечки памяти
+            self._cleanup_excess_labels(target_count)
         elif target_count > current_count:
-            # Добавляем новые labels
+            # Добавляем новые labels (но не больше разумного предела)
             layout = self.centralwidget.layout()
-            for i in range(current_count, target_count):
+            for i in range(current_count, min(target_count, 100)):
                 new_lbl = MessageLabel(self)
                 new_lbl.setStyleSheet(f"""
                     QLabel {{
@@ -183,6 +181,31 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
                 # Вставляем перед stretch
                 layout.insertWidget(layout.count() - 1, new_lbl)
                 self.labels.append(new_lbl)
+    
+    def _cleanup_excess_labels(self, target_count: int):
+        """
+        ✅ FIX: Удаляет лишние labels для предотвращения утечки памяти.
+        
+        Args:
+            target_count: Желаемое количество labels
+        """
+        while len(self.labels) > target_count:
+            # Удаляем последний label
+            old_label = self.labels.pop()
+            old_label.deleteLater()  # Правильное удаление Qt объекта
+    
+    def cleanup_old_messages(self, max_keep: int = 100):
+        """
+        ✅ FIX: Очищает старые сообщения для предотвращения утечки памяти.
+        
+        Args:
+            max_keep: Максимальное количество labels для хранения
+        """
+        if len(self.labels) > max_keep:
+            excess_count = len(self.labels) - max_keep
+            for _ in range(excess_count):
+                old_label = self.labels.pop(0)
+                old_label.deleteLater()
 
     def getNextLabel(self) -> QLabel:
         # Определяем сколько labels нужно использовать на основе max_messages

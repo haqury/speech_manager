@@ -248,19 +248,8 @@ def create_tray_icon():
     settings_win = None
     
     def open_settings():
-        nonlocal settings_win
-        # Создаем новое окно настроек каждый раз (QDialog)
-        settings_win = settings_window.SettingsWindow(conf)
-        # Центрируем окно на экране
-        screen = QApplication.desktop().screenGeometry()
-        settings_win.move(
-            screen.center() - settings_win.rect().center()
-        )
-        # exec_() делает окно модальным и блокирует до закрытия
-        result = settings_win.exec_()
-        # После сохранения настроек применяем их к окну
-        if result == QDialog.Accepted:
-            w.apply_config_settings()
+        # Используем функцию с перезагрузкой горячей клавиши
+        open_settings_with_reload()
     
     # Создаем контекстное меню
     menu = QMenu()
@@ -310,12 +299,40 @@ def create_tray_icon():
         
         # Удаляем хоткей (библиотека keyboard автоматически завершит поток)
         try:
-            keyboard.remove_hotkey(hotkey_handle)
+            if hotkey_handle:
+                keyboard.remove_hotkey(hotkey_handle)
         except Exception as e:
             print(f'Error during hotkey cleanup: {e}')
         
         # Выходим из приложения
         QApplication.quit()
+    
+    def reload_hotkey():
+        """Перезагружает горячую клавишу после изменения настроек."""
+        global hotkey_handle
+        try:
+            # Удаляем старую горячую клавишу
+            if hotkey_handle:
+                keyboard.remove_hotkey(hotkey_handle)
+            
+            # Регистрируем новую
+            hotkey_handle = keyboard.add_hotkey(conf.hotkey, lambda: list(l))
+            print(f"Hotkey reloaded: {conf.hotkey}")
+        except Exception as e:
+            print(f"Error reloading hotkey: {e}")
+    
+    # Сохраняем функцию reload_hotkey в settings_win для вызова после сохранения
+    def open_settings_with_reload():
+        nonlocal settings_win
+        settings_win = settings_window.SettingsWindow(conf)
+        screen = QApplication.desktop().screenGeometry()
+        settings_win.move(
+            screen.center() - settings_win.rect().center()
+        )
+        result = settings_win.exec_()
+        if result == QDialog.Accepted:
+            w.apply_config_settings()
+            reload_hotkey()  # ✅ Перезагружаем горячую клавишу после сохранения
     
     quit_action = QAction("Выход", w)
     quit_action.triggered.connect(quit_application)
@@ -359,7 +376,9 @@ def closeEvent(event):
 w.closeEvent = closeEvent
 
 # Запускает слушатель - сохраняем handle для удаления при выходе
-hotkey_handle = keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list(l))
+# Используем горячую клавишу из конфигурации
+hotkey_handle = keyboard.add_hotkey(conf.hotkey, lambda: list(l))
+print(f"Hotkey registered: {conf.hotkey}")
 
 # Создаем управляемые потоки через ThreadManager (Python 3.14 ready!)
 thread_manager.create_worker(

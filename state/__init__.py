@@ -46,6 +46,12 @@ class State():
         return s.lower()
 
     def get_keyboard_language(self):
+        """
+        Get current keyboard language layout.
+        
+        Returns:
+            Language code ("ru-RU" or "en-US")
+        """
         languages = {
             '0x419': "ru-RU",
             '0x409': EN_US,
@@ -62,18 +68,5 @@ class State():
             return languages['0x419']
 
 
-def get_keyboard_language():
-    languages = {
-        '0x419': "ru-RU",
-        '0x409': "en-US",
-    }
-    user32 = ctypes.WinDLL('user32', use_last_error=True)
-    handle = user32.GetForegroundWindow()
-    threadid = user32.GetWindowThreadProcessId(handle, 0)
-    layout_id = user32.GetKeyboardLayout(threadid)
-    language_id = layout_id & (2 ** 16 - 1)
-    language_id_hex = hex(language_id)
-    if language_id_hex in languages.keys():
-        return languages[language_id_hex]
-    else:
-        return languages['0x419']
+# ✅ REMOVED: Duplicate function get_keyboard_language()
+# Use State().get_keyboard_language() method instead
