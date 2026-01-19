@@ -22,6 +22,14 @@ from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from threading import Thread
 
+# Modern threading для Python 3.14+
+from threading_manager import (
+    ThreadManager,
+    ThreadSafeAudioQueue,
+    WorkerLoop,
+    print_threading_info
+)
+
 r = sr.Recognizer()
 
 conf = config.Config()  # Создаем экземпляр Config
@@ -37,19 +45,21 @@ if not QSystemTrayIcon.isSystemTrayAvailable():
     sys.exit(1)
 
 logger = error.Logger()
-audio_data = None
 
-# Флаг для завершения потоков
-shutdown_flag = False
+# Современная многопоточность для Python 3.14+
+thread_manager = ThreadManager()
+audio_queue = ThreadSafeAudioQueue(maxsize=10)
+
+# Печатаем информацию о режиме многопоточности
+print_threading_info()
 
 
 def manager_proc(w):
     print('manager_proc: start')
     global state
-    global shutdown_flag
     m = manager.Managers(w)
     curr_manager = m
-    while not shutdown_flag:
+    while not thread_manager.is_shutting_down():
         if state.listner != 'manager':
             time.sleep(3)
             continue
@@ -96,21 +106,17 @@ def manager_proc(w):
 def write_proc(w):
     print('write_proc: start')
     global state
-    global audio_data
-    global shutdown_flag
-    while not shutdown_flag:
-        if audio_data is None:
-            time.sleep(0.5)
+    while not thread_manager.is_shutting_down():
+        # Получаем аудио из очереди (thread-safe)
+        ad = audio_queue.get(block=True, timeout=0.5)
+        
+        if ad is None:
             continue
 
         if state.listner != 'write':
-            time.sleep(0.5)
             continue
 
         try:
-
-            ad = audio_data
-            audio_data = None
             result = r.recognize_google(ad, language=state.get_keyboard_language(), show_all=True)
 
             str = l.get_string(speach_resul=result)
@@ -153,13 +159,13 @@ def list(m):
     def on_speech_start():
         """Вызывается когда начинается реальная запись речи"""
         try:
-            from PyQt5.QtCore import QMetaObject, Qt
-            # Используем invokeMethod для безопасного обновления UI из другого потока
+            from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
+            # Используем invokeMethod с Q_ARG для безопасного обновления UI из другого потока
             QMetaObject.invokeMethod(
                 m.window.statelbl,
                 "setText",
                 Qt.QueuedConnection,
-                "speech-to-text on"
+                Q_ARG(str, "speech-to-text on")
             )
         except Exception as e:
             print(f"Error updating UI on speech start: {e}")
@@ -167,12 +173,12 @@ def list(m):
     def on_speech_end():
         """Вызывается когда заканчивается запись речи"""
         try:
-            from PyQt5.QtCore import QMetaObject, Qt
+            from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
             QMetaObject.invokeMethod(
                 m.window.statelbl,
                 "setText",
                 Qt.QueuedConnection,
-                "speech-to-text off"
+                Q_ARG(str, "speech-to-text off")
             )
         except Exception as e:
             print(f"Error updating UI on speech end: {e}")
@@ -297,14 +303,17 @@ def create_tray_icon():
     
     # Действие "Выход"
     def quit_application():
-        global shutdown_flag
-        shutdown_flag = True
+        print("Shutting down application...")
+        
+        # Останавливаем все управляемые потоки
+        thread_manager.shutdown(timeout=5.0)
+        
         # Удаляем хоткей (библиотека keyboard автоматически завершит поток)
         try:
-            # Просто завершаем приложение - keyboard сам закроет хоткеи
-            pass
+            keyboard.remove_hotkey(hotkey_handle)
         except Exception as e:
             print(f'Error during hotkey cleanup: {e}')
+        
         # Выходим из приложения
         QApplication.quit()
     
@@ -352,12 +361,21 @@ w.closeEvent = closeEvent
 # Запускает слушатель - сохраняем handle для удаления при выходе
 hotkey_handle = keyboard.add_hotkey('ctrl+shift+win+f5', lambda: list(l))
 
-th = Thread(target=write_proc, args=(w,))
-th.start()
+# Создаем управляемые потоки через ThreadManager (Python 3.14 ready!)
+thread_manager.create_worker(
+    target=write_proc,
+    args=(w,),
+    name="WriteProcessor",
+    daemon=True
+)
 
+thread_manager.create_worker(
+    target=manager_proc,
+    args=(w,),
+    name="ManagerProcessor",
+    daemon=True
+)
 
-tm = Thread(target=manager_proc, args=(w,))
-tm.start()
-
-tw = Thread(target=view_wget(), args=())
-tw.start()
+# ✅ Qt GUI должен быть в главном потоке, не в worker thread!
+# Запускаем view_wget() в главном потоке (он содержит app.exec())
+view_wget()
