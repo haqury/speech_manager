@@ -109,6 +109,36 @@ class Config:
             'type': str,
             'default': 'ctrl+shift+win+f5',
             'allowed_values': None  # Will be validated separately
+        },
+        'window_offset_from_bottom': {
+            'type': int,
+            'min': 0,
+            'max': 2000,
+            'default': 400
+        },
+        'manager_sleep_interval': {
+            'type': float,
+            'min': 0.1,
+            'max': 60.0,
+            'default': 3.0
+        },
+        'startup_delay': {
+            'type': float,
+            'min': 0.0,
+            'max': 10.0,
+            'default': 2.8
+        },
+        'clipboard_copy_delay': {
+            'type': float,
+            'min': 0.01,
+            'max': 1.0,
+            'default': 0.15
+        },
+        'paste_delay': {
+            'type': float,
+            'min': 0.01,
+            'max': 1.0,
+            'default': 0.1
         }
     }
     
@@ -141,7 +171,12 @@ class Config:
             'output_interface': self.output_interface,
             'output_clipboard': self.output_clipboard,
             'output_text_cursor': self.output_text_cursor,
-            'hotkey': self.hotkey
+            'hotkey': self.hotkey,
+            'window_offset_from_bottom': self.window_offset_from_bottom,
+            'manager_sleep_interval': self.manager_sleep_interval,
+            'startup_delay': self.startup_delay,
+            'clipboard_copy_delay': self.clipboard_copy_delay,
+            'paste_delay': self.paste_delay
         }
     
     def _apply_defaults(self):

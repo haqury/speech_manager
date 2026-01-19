@@ -10,7 +10,6 @@ import config
 import state as s
 import error
 import listner
-import manager
 import speech_recognition as sr
 from audio_recorder import MicrophoneStream
 
@@ -25,10 +24,9 @@ from threading import Thread
 # Modern threading для Python 3.14+
 from threading_manager import (
     ThreadManager,
-    ThreadSafeAudioQueue,
-    WorkerLoop,
     print_threading_info
 )
+
 
 r = sr.Recognizer()
 
@@ -48,112 +46,18 @@ logger = error.Logger()
 
 # Современная многопоточность для Python 3.14+
 thread_manager = ThreadManager()
-audio_queue = ThreadSafeAudioQueue(maxsize=10)
 
 # Печатаем информацию о режиме многопоточности
 print_threading_info()
 
 
-def manager_proc(w):
-    print('manager_proc: start')
-    global state
-    m = manager.Managers(w)
-    curr_manager = m
-    while not thread_manager.is_shutting_down():
-        if state.listner != 'manager':
-            time.sleep(3)
-            continue
 
-        # Используем MicrophoneStream вместо sr.Microphone (PyAudio заменен на SoundDevice)
-        with MicrophoneStream(
-            energy_threshold=conf.energy_threshold,
-            pause_threshold=conf.pause_threshold
-        ) as source:
-            try:
-                curr_manager.start()
-            except Exception as e:
-                print(f'Manager start failed: {e}')
-
-            ad = source.listen(phrase_time_limit=6)
-            m.write('record')
-            result = r.recognize_google(ad, language=state.get_keyboard_language(), show_all=True)
-            str = l.get_string(speach_resul=result)
-            if not str:
-                continue
-            m.write(str)
-
-            if l.is_command_write(str):
-                curr_manager = m
-                state.listner = 'write'
-                continue
-
-            if curr_manager == m:
-                curr_manager = m.spec(str) or m
-                continue
-
-            curr_manager.process_to_run(str)
-
-        # except sr.UnknownValueError:
-        #     logger.log("Google Speech Recognition could not understand audio")
-        # except sr.RequestError as e:
-        #     logger.log("Could not request results from Google Speech Recognition service; {0}".format(e))
-        # except OSError as e:
-        #     logger.log("OSError service; {0}".format(e))
-        # except TypeError as e:
-        #     logger.log("TypeError service; {0}".format(e))
-
-
-def write_proc(w):
-    print('write_proc: start')
-    global state
-    while not thread_manager.is_shutting_down():
-        # Получаем аудио из очереди (thread-safe)
-        ad = audio_queue.get(block=True, timeout=0.5)
-        
-        if ad is None:
-            continue
-
-        if state.listner != 'write':
-            continue
-
-        try:
-            result = r.recognize_google(ad, language=state.get_keyboard_language(), show_all=True)
-
-            str = l.get_string(speach_resul=result)
-            if not str:
-                continue
-
-            c = l.is_commands(str)
-            if c:
-                state.listner = 'manager'
-
-            c = l.is_commands_state(str)
-            if c:
-                l.get_command_secification(str)
-
-            pr = Thread(target=l.process, args=(result,))
-            pr.start()
-
-        except sr.UnknownValueError:
-            logger.log("Google Speech Recognition could not understand audio")
-        except sr.RequestError as e:
-            logger.log("Could not request results from Google Speech Recognition service; {0}".format(e))
-        except OSError as e:
-            logger.log("OSError service; {0}".format(e))
-        # except TypeError as e:
-        #     logger.log("TypeError service; {0}".format(e))
-        #     print()
-
-def listed():
-    print('listed write')
-    if state.listner != 'write':
-        return
-    tll = Thread(target=list, args=())
-    tll.start()
-    time.sleep(2.8)
-
-def list(m):
-    global audio_data
+def process_speech(m):
+    """
+    Процесс распознавания речи.
+    Слушает микрофон, распознает речь через Google Speech Recognition
+    и выводит результат в UI/буфер обмена/текстовый курсор.
+    """
 
     # Callback функции для синхронизации UI с состоянием записи
     def on_speech_start():
@@ -202,7 +106,22 @@ def list(m):
             if m.window.config and m.window.config.auto_hide_duration > 0:
                 m.window.hide_timer.stop()
             
-            m.pocessAudio(source.listen(phrase_time_limit=8))
+            # Слушаем и распознаем речь
+            audio_data = source.listen(phrase_time_limit=conf.phrase_time_limit)
+            
+            try:
+                # Распознаем через Google Speech Recognition
+                result = r.recognize_google(audio_data, language=state.get_keyboard_language(), show_all=True)
+                
+                # Обрабатываем результат
+                m.process(result)
+            except sr.UnknownValueError:
+                print("Google Speech Recognition could not understand audio")
+            except sr.RequestError as e:
+                print(f"Could not request results from Google Speech Recognition: {e}")
+            except Exception as e:
+                print(f"Error processing speech: {e}")
+            
             m.window.statelbl.setText("speech-to-text off")
             
             # Запускаем таймер скрытия после окончания прослушивания
@@ -224,7 +143,7 @@ def list(m):
 def view_wget():
     w.resize(500, 150)
     w.show()
-    w.move(GetSystemMetrics(0) - w.size().width(), GetSystemMetrics(1) - 400)
+    w.move(GetSystemMetrics(0) - w.size().width(), GetSystemMetrics(1) - conf.window_offset_from_bottom)
     sys.exit(app.exec())
 
 w = subtitle_speach.MainWindow(conf)
@@ -377,23 +296,8 @@ w.closeEvent = closeEvent
 
 # Запускает слушатель - сохраняем handle для удаления при выходе
 # Используем горячую клавишу из конфигурации
-hotkey_handle = keyboard.add_hotkey(conf.hotkey, lambda: list(l))
+hotkey_handle = keyboard.add_hotkey(conf.hotkey, lambda: process_speech(l))
 print(f"Hotkey registered: {conf.hotkey}")
-
-# Создаем управляемые потоки через ThreadManager (Python 3.14 ready!)
-thread_manager.create_worker(
-    target=write_proc,
-    args=(w,),
-    name="WriteProcessor",
-    daemon=True
-)
-
-thread_manager.create_worker(
-    target=manager_proc,
-    args=(w,),
-    name="ManagerProcessor",
-    daemon=True
-)
 
 # ✅ Qt GUI должен быть в главном потоке, не в worker thread!
 # Запускаем view_wget() в главном потоке (он содержит app.exec())
