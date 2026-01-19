@@ -235,7 +235,7 @@ def create_tray_icon():
                 keyboard.remove_hotkey(hotkey_handle)
             
             # Регистрируем новую
-            hotkey_handle = keyboard.add_hotkey(conf.hotkey, lambda: list(l))
+            hotkey_handle = keyboard.add_hotkey(conf.hotkey, lambda: process_speech(l))
             print(f"Hotkey reloaded: {conf.hotkey}")
         except Exception as e:
             print(f"Error reloading hotkey: {e}")
