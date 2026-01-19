@@ -187,15 +187,56 @@ echo ✅ Теги отправлены
 
 echo.
 echo ============================================================
-echo 🎉 Шаг 4/4: Создание GitHub Release
+echo 📝 Шаг 4/6: Генерация RELEASE_NOTES.md
 echo ============================================================
+
+REM Генерируем RELEASE_NOTES.md из шаблона
+if exist ".templates\RELEASE_NOTES.template.md" (
+    powershell -Command "(Get-Content '.templates\RELEASE_NOTES.template.md') -replace '\{VERSION\}', '!VERSION!' | Set-Content 'RELEASE_NOTES.md'"
+    echo ✅ RELEASE_NOTES.md создан
+) else (
+    echo ⚠️  Шаблон не найден, пропускаем
+)
+
+echo.
+echo ============================================================
+echo 📦 Шаг 5/6: Упаковка архивов
+echo ============================================================
+
+REM Запускаем скрипт упаковки
+call pack_release.bat
+
+if errorlevel 1 (
+    echo ❌ Ошибка упаковки архивов
+    pause
+    exit /b 1
+)
+
+echo.
+echo ============================================================
+echo 🎉 Шаг 6/6: Создание GitHub Release
+echo ============================================================
+
+REM Проверяем наличие архивов
+if not exist "releases\SpeechManager-v!VERSION!-win64.zip" (
+    echo ❌ Архив win64 не найден
+    pause
+    exit /b 1
+)
+
+if not exist "releases\SpeechManager-v!VERSION!-source.zip" (
+    echo ❌ Архив source не найден
+    pause
+    exit /b 1
+)
 
 REM Читаем changelog для этой версии (первая секция)
 set NOTES=Release v!VERSION!
 
-REM Создаем release
+REM Создаем release с архивами
 gh release create v!VERSION! ^
-    dist\SpeechManager.exe ^
+    "releases\SpeechManager-v!VERSION!-win64.zip#Windows .exe (готовый к использованию)" ^
+    "releases\SpeechManager-v!VERSION!-source.zip#Исходный код" ^
     --title "Speech Manager v!VERSION!" ^
     --notes "!NOTES!" ^
     --latest
@@ -218,8 +259,11 @@ echo Что было сделано:
 echo   ✅ Изменения закоммичены
 echo   ✅ Создан тег v!VERSION!
 echo   ✅ Отправлено в GitHub
+echo   ✅ Упакованы архивы:
+echo      - SpeechManager-v!VERSION!-win64.zip (готовый .exe)
+echo      - SpeechManager-v!VERSION!-source.zip (исходный код)
 echo   ✅ Создан GitHub Release
-echo   ✅ Загружен SpeechManager.exe
+echo   ✅ Загружены архивы на GitHub
 echo.
 
 pause

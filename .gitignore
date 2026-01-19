@@ -39,6 +39,18 @@ MANIFEST
 # Build artifacts (keep these out of git)
 .venv_build/
 
+# Release archives
+releases/
+temp_exe_release/
+temp_src_release/
+
+# Release documentation (generated for each release)
+RELEASE_NOTES.md
+RELEASE_CHECKLIST.md
+
+# Keep templates
+!.templates/
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
