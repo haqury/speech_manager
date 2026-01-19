@@ -36,6 +36,9 @@ MANIFEST
 *.spec
 !build_exe.spec
 
+# Build artifacts (keep these out of git)
+.venv_build/
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
