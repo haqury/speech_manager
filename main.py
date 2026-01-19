@@ -109,6 +109,19 @@ def process_speech(m: listner.ListnerManger) -> None:
         except Exception as e:
             logger.error(f"Error updating status to '{text}': {e}", exc_info=True)
     
+    # Callback для обновления громкости
+    def on_volume_update(volume: int) -> None:
+        """
+        Вызывается при изменении громкости микрофона.
+        
+        Args:
+            volume: Уровень громкости (0-100)
+        """
+        try:
+            m.window.update_volume(volume)
+        except Exception as e:
+            logger.error(f"Error updating volume: {e}", exc_info=True)
+    
     # Callback функции для синхронизации UI с состоянием записи
     def on_speech_start() -> None:
         """Вызывается когда начинается реальная запись речи."""
@@ -120,11 +133,16 @@ def process_speech(m: listner.ListnerManger) -> None:
         logger.info(f"⏱️  Speech ended at {timing.time() - total_start:.2f}s")
 
     # Используем MicrophoneStream вместо sr.Microphone (PyAudio заменен на SoundDevice)
+    # Используем выбранный микрофон из настроек
+    selected_device = m.window.config.selected_mic_index if m.window.config else None
+    
     with MicrophoneStream(
+        device=selected_device,
         energy_threshold=m.window.config.energy_threshold if m.window.config else 300,
         pause_threshold=m.window.config.pause_threshold if m.window.config else 0.8,
         on_speech_start=on_speech_start,
-        on_speech_end=on_speech_end
+        on_speech_end=on_speech_end,
+        on_volume_update=on_volume_update
     ) as source:
         try:
             # Показываем окно при активации прослушивания
@@ -134,6 +152,8 @@ def process_speech(m: listner.ListnerManger) -> None:
                 m.window.raise_()
             
             update_status("⏸️ Ready...", "on")
+            # Показываем визуализатор громкости
+            m.window.show_volume_bar(True)
             # Сбрасываем таймер скрытия при активации
             if m.window.config and m.window.config.auto_hide_duration > 0:
                 m.window.hide_timer.stop()
@@ -179,18 +199,28 @@ def process_speech(m: listner.ListnerManger) -> None:
                 logger.error(f"Unexpected error during speech recognition: {e}", exc_info=True)
                 update_status("❌ Error", "error")
             
+            # Скрываем визуализатор громкости и сбрасываем значение
+            m.window.show_volume_bar(False)
+            m.window.update_volume(0)
+            
             # Запускаем таймер скрытия после окончания прослушивания
             if m.window.config and m.window.config.auto_hide_duration > 0:
                 m.window.schedule_auto_hide()
         except sr.UnknownValueError:
             logger.warning("Google Speech Recognition could not understand audio")
             update_status("❌ Not understood", "error")
+            m.window.show_volume_bar(False)
+            m.window.update_volume(0)
         except sr.RequestError as e:
             logger.error(f"Network error with Google Speech Recognition: {e}", exc_info=True)
             update_status("❌ Network error", "error")
+            m.window.show_volume_bar(False)
+            m.window.update_volume(0)
         except OSError as e:
             logger.error(f"OSError: {e}", exc_info=True)
             update_status("❌ Audio error", "error")
+            m.window.show_volume_bar(False)
+            m.window.update_volume(0)
         # except TypeError as e:
         #     logger.log("TypeError service; {0}".format(e))
 

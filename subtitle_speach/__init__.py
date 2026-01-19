@@ -73,6 +73,31 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
 
         self.statelbl.setText("⏸️ Ready...")
         
+        # Визуализатор громкости (progress bar)
+        self.volume_bar = QProgressBar(self)
+        self.volume_bar.setRange(0, 100)
+        self.volume_bar.setValue(0)
+        self.volume_bar.setTextVisible(False)
+        self.volume_bar.setFixedHeight(8)
+        self.volume_bar.setStyleSheet("""
+            QProgressBar {
+                background-color: rgba(40, 40, 40, 100);
+                border: none;
+                border-radius: 4px;
+            }
+            QProgressBar::chunk {
+                background-color: qlineargradient(
+                    x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #00FF00,
+                    stop:0.5 #FFFF00,
+                    stop:1 #FF0000
+                );
+                border-radius: 4px;
+            }
+        """)
+        self.volume_bar.setVisible(False)  # Скрыт по умолчанию
+        layout.addWidget(self.volume_bar)
+        
         # Обработчик клика на statelbl для сворачивания (левый клик) и контекстного меню (правый клик)
         self.context_menu = None  # Будет установлено из main.py
         
@@ -112,6 +137,42 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         lbl = self.getNextLabel()
         lbl.setText(str)
         self.schedule_auto_hide()
+    
+    def update_volume(self, volume: int) -> None:
+        """
+        Обновляет визуализатор громкости.
+        
+        Args:
+            volume: Уровень громкости (0-100)
+        """
+        try:
+            from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
+            QMetaObject.invokeMethod(
+                self.volume_bar,
+                "setValue",
+                Qt.QueuedConnection,
+                Q_ARG(int, volume)
+            )
+        except Exception as e:
+            pass  # Игнорируем ошибки визуализации
+    
+    def show_volume_bar(self, show: bool = True) -> None:
+        """
+        Показывает/скрывает визуализатор громкости.
+        
+        Args:
+            show: True для показа, False для скрытия
+        """
+        try:
+            from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
+            QMetaObject.invokeMethod(
+                self.volume_bar,
+                "setVisible",
+                Qt.QueuedConnection,
+                Q_ARG(bool, show)
+            )
+        except Exception as e:
+            pass
     
     def schedule_auto_hide(self):
         """Запускает таймер автоматического скрытия на основе настроек"""

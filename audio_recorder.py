@@ -5,10 +5,53 @@ This module provides audio recording functionality compatible with Python 3.13+
 import numpy as np
 import sounddevice as sd
 import speech_recognition as sr
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List, Dict
 import threading
 import queue
 import time
+
+
+def get_available_microphones() -> List[Dict[str, any]]:
+    """
+    Получает список доступных микрофонов в системе.
+    
+    Returns:
+        Список словарей с информацией о микрофонах:
+        [{'index': 0, 'name': 'Microphone', 'channels': 2}, ...]
+    """
+    devices = sd.query_devices()
+    microphones = []
+    
+    for idx, device in enumerate(devices):
+        # Только устройства с входами (микрофоны)
+        if device['max_input_channels'] > 0:
+            microphones.append({
+                'index': idx,
+                'name': device['name'],
+                'channels': device['max_input_channels'],
+                'sample_rate': int(device['default_samplerate'])
+            })
+    
+    return microphones
+
+
+def get_default_microphone_index() -> int:
+    """
+    Получает индекс микрофона по умолчанию.
+    
+    Returns:
+        Индекс микрофона по умолчанию
+    """
+    try:
+        default_device = sd.query_devices(kind='input')
+        # Ищем этот device в списке всех устройств
+        devices = sd.query_devices()
+        for idx, device in enumerate(devices):
+            if device['name'] == default_device['name']:
+                return idx
+        return 0
+    except Exception:
+        return 0
 
 
 class AudioRecorder:
@@ -27,7 +70,8 @@ class AudioRecorder:
         energy_threshold: int = 300,
         pause_threshold: float = 0.8,
         on_speech_start: Optional[callable] = None,
-        on_speech_end: Optional[callable] = None
+        on_speech_end: Optional[callable] = None,
+        on_volume_update: Optional[callable] = None
     ):
         """
         Initialize audio recorder.
@@ -41,6 +85,7 @@ class AudioRecorder:
             pause_threshold: Seconds of silence to mark end of phrase
             on_speech_start: Callback function when speech detected
             on_speech_end: Callback function when speech ends
+            on_volume_update: Callback function for volume updates (called with energy value)
         """
         self.sample_rate = sample_rate
         self.channels = channels
@@ -50,6 +95,7 @@ class AudioRecorder:
         self.pause_threshold = pause_threshold
         self.on_speech_start = on_speech_start
         self.on_speech_end = on_speech_end
+        self.on_volume_update = on_volume_update
         
         # Recording state
         self.is_recording = False
@@ -151,6 +197,15 @@ class AudioRecorder:
                     
                     # Calculate energy
                     energy = self.get_energy(audio_chunk)
+                    
+                    # Update volume visualizer
+                    if self.on_volume_update:
+                        try:
+                            # Normalize energy to 0-100 range for visualization
+                            normalized_volume = min(100, int((energy / self.energy_threshold) * 50))
+                            self.on_volume_update(normalized_volume)
+                        except Exception as e:
+                            pass  # Ignore visualization errors
                     
                     # Check if speech detected
                     if energy > self.energy_threshold:

@@ -1,5 +1,6 @@
 from PyQt5.Qt import *
 import config
+from audio_recorder import get_available_microphones, get_default_microphone_index
 
 
 class SettingsWindow(QDialog):
@@ -113,6 +114,36 @@ class SettingsWindow(QDialog):
             }
             QCheckBox::indicator:checked {
                 background-color: #6A1B9A;
+            }
+            QComboBox {
+                background-color: rgba(40, 45, 55, 180);
+                color: white;
+                border: 1px solid rgba(60, 65, 75, 180);
+                border-radius: 4px;
+                padding: 5px 10px;
+                font-size: 11px;
+                min-height: 28px;
+            }
+            QComboBox:hover {
+                border: 1px solid #6A1B9A;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid white;
+                margin-right: 5px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: rgba(40, 45, 55, 250);
+                color: white;
+                selection-background-color: #6A1B9A;
+                selection-color: white;
+                border: 1px solid rgba(60, 65, 75, 180);
             }
         """)
         
@@ -271,16 +302,43 @@ class SettingsWindow(QDialog):
         recognition_layout.addWidget(pause_spin, 2, 1, 1, 2)
         self.controls['pause_threshold'] = pause_spin
         
-        # Индекс микрофона
-        recognition_layout.addWidget(QLabel("Индекс выбранного микрофона:"), 3, 0)
+        # Выбор микрофона
+        recognition_layout.addWidget(QLabel("🎤 Микрофон:"), 3, 0)
         
-        mic_index_spin = QSpinBox()
-        mic_index_spin.setRange(0, 10)
-        mic_index_spin.setValue(self.config.selected_mic_index)
-        mic_index_spin.setFixedWidth(70)
+        mic_combo = QComboBox()
+        mic_combo.setToolTip("Выберите микрофон для распознавания речи")
         
-        recognition_layout.addWidget(mic_index_spin, 3, 1, 1, 2)
-        self.controls['selected_mic_index'] = mic_index_spin
+        # Получаем список доступных микрофонов
+        try:
+            available_mics = get_available_microphones()
+            default_index = get_default_microphone_index()
+            
+            if available_mics:
+                for mic in available_mics:
+                    # Формат: "🎤 Название (ID: X, каналов: Y)"
+                    display_text = f"{mic['name']} (ID: {mic['index']}, {mic['channels']}ch, {mic['sample_rate']}Hz)"
+                    mic_combo.addItem(display_text, mic['index'])  # userData = device index
+                
+                # Устанавливаем текущий выбранный микрофон
+                for i in range(mic_combo.count()):
+                    if mic_combo.itemData(i) == self.config.selected_mic_index:
+                        mic_combo.setCurrentIndex(i)
+                        break
+                else:
+                    # Если сохраненный индекс не найден, выбираем default
+                    for i in range(mic_combo.count()):
+                        if mic_combo.itemData(i) == default_index:
+                            mic_combo.setCurrentIndex(i)
+                            break
+            else:
+                mic_combo.addItem("⚠️ Микрофоны не найдены", 0)
+                mic_combo.setEnabled(False)
+        except Exception as e:
+            mic_combo.addItem(f"❌ Ошибка: {str(e)}", 0)
+            mic_combo.setEnabled(False)
+        
+        recognition_layout.addWidget(mic_combo, 3, 1, 1, 2)
+        self.controls['selected_mic_index'] = mic_combo
         
         scroll_layout.addWidget(recognition_group)
         
@@ -538,6 +596,11 @@ class SettingsWindow(QDialog):
             if isinstance(control, QSlider) and key == 'opacity':
                 # Для opacity слайдер дает значение 0-100, нужно разделить на 100
                 value = control.value() / 100.0
+            elif isinstance(control, QComboBox):
+                # Для микрофона - берем userData (device index)
+                value = control.currentData()
+                if value is None:
+                    value = 0
             elif isinstance(control, (QSpinBox, QDoubleSpinBox)):
                 value = control.value()
             elif isinstance(control, QSlider):
