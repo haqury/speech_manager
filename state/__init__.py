@@ -1,51 +1,55 @@
+"""
+State module for managing application state.
+
+Contains State class for managing keyboard language and other application state.
+"""
 import ctypes
-import re
+from typing import Dict
+
+import config as config_module
 
 EN_US = "en-US"
 
-CASE_DEFAULT = 0
-CASE_CAMEL = 1
-CASE_SNAKE = 2
 
+class State:
+    """Manages application state including keyboard language."""
+    
+    def __init__(self, config: 'config_module.Config') -> None:
+        """
+        Initialize state.
+        
+        Args:
+            config: Application configuration
+        """
+        self.Config: 'config_module.Config' = config
+        self.listner: str = "write"
+        self.active: bool = False
 
-class State():
-    def __init__(self, config):
-        self.case = 0
-        self.Config = config
-        self.listner = "write"
-        self.active = False
+        self.fastWrite: bool = False
+        self.is_up: bool = False
 
-        self.fastWrite = False
-        self.is_up = False
-
-        self.languages = {
+        self.languages: Dict[str, str] = {
             '0x419': "ru-RU",
             '0x409': "en-US",
         }
-        self.languages_for_speacher_service = {
+        self.languages_for_speacher_service: Dict[str, str] = {
             '0x419': "ru",
             '0x409': "en-US",
         }
 
-    def getStr(self, str):
-        match self.case:
-            case 0:
-                return str
-            case 1:
-                return self.camel_case(str)
-            case 2:
-                return self.to_snake_case(str)
-        return str
+    def getStr(self, text: str) -> str:
+        """
+        Returns text as-is (no transformations).
+        
+        Args:
+            text: Input text
+            
+        Returns:
+            The same text unchanged
+        """
+        return text
 
-    def camel_case(self, s):
-        s = re.sub(r"(_|-)+", " ", s).title().replace(" ", "")
-        return ''.join([s[0].lower(), s[1:]])
-
-    def to_snake_case(name, s):
-        s = re.sub(' +', '_', s)
-        return s.lower()
-
-    def get_keyboard_language(self):
+    def get_keyboard_language(self) -> str:
         """
         Get current keyboard language layout.
         

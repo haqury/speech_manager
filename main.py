@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
+"""
+Speech Manager - приложение для распознавания речи с выводом в разные места.
+
+Основные возможности:
+- Распознавание речи через Google Speech Recognition
+- Вывод в UI, буфер обмена, текстовый курсор
+- Настраиваемая горячая клавиша
+- Системный трей
+"""
 import sys
 import time
+from typing import Optional
 from win32api import GetSystemMetrics
 import keyboard
 from pynput import keyboard as hotkeyPackage
@@ -52,16 +62,19 @@ print_threading_info()
 
 
 
-def process_speech(m):
+def process_speech(m: listner.ListnerManger) -> None:
     """
     Процесс распознавания речи.
     Слушает микрофон, распознает речь через Google Speech Recognition
     и выводит результат в UI/буфер обмена/текстовый курсор.
+    
+    Args:
+        m: Экземпляр ListnerManger для обработки распознанного текста
     """
 
     # Callback функции для синхронизации UI с состоянием записи
-    def on_speech_start():
-        """Вызывается когда начинается реальная запись речи"""
+    def on_speech_start() -> None:
+        """Вызывается когда начинается реальная запись речи."""
         try:
             from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
             # Используем invokeMethod с Q_ARG для безопасного обновления UI из другого потока
@@ -74,8 +87,8 @@ def process_speech(m):
         except Exception as e:
             print(f"Error updating UI on speech start: {e}")
     
-    def on_speech_end():
-        """Вызывается когда заканчивается запись речи"""
+    def on_speech_end() -> None:
+        """Вызывается когда заканчивается запись речи."""
         try:
             from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
             QMetaObject.invokeMethod(
@@ -140,7 +153,11 @@ def process_speech(m):
         #     logger.log("TypeError service; {0}".format(e))
 
 
-def view_wget():
+def view_wget() -> None:
+    """
+    Запускает главное окно приложения.
+    Устанавливает размер, позицию и запускает Qt event loop.
+    """
     w.resize(500, 150)
     w.show()
     w.move(GetSystemMetrics(0) - w.size().width(), GetSystemMetrics(1) - conf.window_offset_from_bottom)
@@ -151,7 +168,13 @@ w = subtitle_speach.MainWindow(conf)
 l = listner.ListnerManger(state, w)
 
 # Создание иконки для системного трея
-def create_tray_icon():
+def create_tray_icon() -> QSystemTrayIcon:
+    """
+    Создает иконку в системном трее с контекстным меню.
+    
+    Returns:
+        QSystemTrayIcon: Созданная иконка системного трея
+    """
     # Создаем простую иконку (можно заменить на файл .ico позже)
     pixmap = QPixmap(16, 16)
     pixmap.fill(QColor(70, 130, 180))  # Цвет steelblue
@@ -166,7 +189,8 @@ def create_tray_icon():
     # Окно настроек (будет создано при первом использовании)
     settings_win = None
     
-    def open_settings():
+    def open_settings() -> None:
+        """Открывает окно настроек."""
         # Используем функцию с перезагрузкой горячей клавиши
         open_settings_with_reload()
     
@@ -184,7 +208,8 @@ def create_tray_icon():
     show_action = QAction("Показать окно", w)
     hide_action = QAction("Скрыть окно", w)
     
-    def toggle_window():
+    def toggle_window() -> None:
+        """Переключает видимость главного окна."""
         if w.isVisible():
             w.hide()
             # Останавливаем таймер скрытия при скрытии
@@ -210,7 +235,8 @@ def create_tray_icon():
     menu.addSeparator()
     
     # Действие "Выход"
-    def quit_application():
+    def quit_application() -> None:
+        """Завершает работу приложения с корректной очисткой ресурсов."""
         print("Shutting down application...")
         
         # Останавливаем все управляемые потоки
@@ -226,7 +252,7 @@ def create_tray_icon():
         # Выходим из приложения
         QApplication.quit()
     
-    def reload_hotkey():
+    def reload_hotkey() -> None:
         """Перезагружает горячую клавишу после изменения настроек."""
         global hotkey_handle
         try:
@@ -241,7 +267,8 @@ def create_tray_icon():
             print(f"Error reloading hotkey: {e}")
     
     # Сохраняем функцию reload_hotkey в settings_win для вызова после сохранения
-    def open_settings_with_reload():
+    def open_settings_with_reload() -> None:
+        """Открывает настройки с последующей перезагрузкой горячей клавиши."""
         nonlocal settings_win
         settings_win = settings_window.SettingsWindow(conf)
         screen = QApplication.desktop().screenGeometry()
@@ -263,7 +290,13 @@ def create_tray_icon():
     w.context_menu = menu
     
     # Клик по иконке показывает основной интерфейс, двойной клик - настройки
-    def on_icon_activated(reason):
+    def on_icon_activated(reason: QSystemTrayIcon.ActivationReason) -> None:
+        """
+        Обрабатывает клики по иконке в трее.
+        
+        Args:
+            reason: Причина активации (одинарный клик, двойной клик и т.д.)
+        """
         if reason == QSystemTrayIcon.Trigger:
             # Одинарный клик - показываем основное окно
             toggle_window()
@@ -282,7 +315,14 @@ def create_tray_icon():
 tray_icon = create_tray_icon()
 
 # Переопределяем закрытие окна - сворачиваем в трей вместо закрытия
-def closeEvent(event):
+def closeEvent(event: QCloseEvent) -> None:
+    """
+    Обрабатывает событие закрытия окна.
+    Сворачивает окно в трей вместо полного закрытия.
+    
+    Args:
+        event: Событие закрытия окна
+    """
     event.ignore()
     w.hide()
     tray_icon.showMessage(

@@ -1,11 +1,11 @@
 {
-  "opacity": 0.89,
+  "opacity": 0.9,
   "font_size": 16,
   "max_messages": 6,
   "sample_rate": 16000,
   "record_duration": 300,
   "energy_threshold": 500,
-  "pause_threshold": 0.1,
+  "pause_threshold": 0.8,
   "selected_mic_index": 0,
   "listen_timeout": 10,
   "phrase_time_limit": 10,

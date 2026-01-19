@@ -28,7 +28,15 @@ class MessageLabel(QLabel):
 
 
 class MainWindow(QMainWindow):  # QMainWindow  -QWidget
-    def __init__(self, config=None):
+    """Main window for displaying recognized speech."""
+    
+    def __init__(self, config: Optional['config.Config'] = None) -> None:
+        """
+        Initialize main window.
+        
+        Args:
+            config: Application configuration
+        """
         super(MainWindow, self).__init__()
         self.config = config
         self.centralwidget = QWidget()

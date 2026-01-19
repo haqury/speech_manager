@@ -35,23 +35,37 @@ DOWNLOADS_DIR.mkdir(exist_ok=True)
 class SpeechService:
     """Speech synthesis service using gTTS and pyglet."""
     
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize speech service."""
         self.commands = RETURN_COMMANDS
         self.lang_rus = 'ru'
         self._temp_files = []  # Track temp files for cleanup
 
     def is_spec(self, text: str) -> bool:
-        """Check if text contains special commands."""
+        """
+        Check if text contains special commands.
+        
+        Args:
+            text: Text to check
+            
+        Returns:
+            True if text contains special commands
+        """
         for command in self.commands:
             if command.lower() in text.lower():
                 return True
         return False
 
-    def run(self, text: str):
-        """Run speech synthesis with current keyboard language."""
+    def run(self, text: str) -> None:
+        """
+        Run speech synthesis with current keyboard language.
+        
+        Args:
+            text: Text to synthesize
+        """
         return self.speech(text, state.get_keyboard_language())
 
-    def speech(self, text: str, language: str = 'ru'):
+    def speech(self, text: str, language: str = 'ru') -> None:
         """
         Synthesize speech from text using gTTS.
         
