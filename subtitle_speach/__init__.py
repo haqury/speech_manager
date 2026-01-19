@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
                     QLabel {
                         font-family: 'Consolas';
                         background-color: rgba(0, 0, 0,  40);
-                        color: red;
+                        color: #888888;
                         font-size: 30px;
 
                     }
@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         self.statelbl.setCursor(Qt.PointingHandCursor)
         layout.addWidget(self.statelbl)
 
-        self.statelbl.setText("speech-to-text off")
+        self.statelbl.setText("⏸️ Ready...")
         
         # Обработчик клика на statelbl для сворачивания (левый клик) и контекстного меню (правый клик)
         self.context_menu = None  # Будет установлено из main.py
@@ -144,15 +144,9 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         font_size = self.config.font_size
         font_size_str = f"{font_size}px"
         
-        # Обновляем стиль statelbl
-        self.statelbl.setStyleSheet(f"""
-            QLabel {{
-                font-family: 'Consolas';
-                background-color: rgba(0, 0, 0,  40);
-                color: red;
-                font-size: {font_size_str};
-            }}
-        """)
+        # Обновляем стиль statelbl (используем серый цвет для 'off')
+        from subtitle_speach.status_colors import get_status_style
+        self.statelbl.setStyleSheet(get_status_style('off', font_size))
         
         # Обновляем стиль всех labels с сообщениями
         for lbl in self.labels:

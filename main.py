@@ -21,6 +21,7 @@ import listner
 import speech_recognition as sr
 from audio_recorder import MicrophoneStream
 import subtitle_speach
+from subtitle_speach.status_colors import get_status_style
 import settings_window
 
 from PyQt5.Qt import *
@@ -72,34 +73,51 @@ def process_speech(m: listner.ListnerManger) -> None:
     Args:
         m: Экземпляр ListnerManger для обработки распознанного текста
     """
+    import time as timing
+    total_start = timing.time()
+    logger.info("=" * 60)
+    logger.info("🎤 Started speech recognition process")
 
+    # Вспомогательная функция для обновления статуса с цветом
+    def update_status(text: str, status_key: str) -> None:
+        """
+        Обновляет текст и цвет статусного лейбла.
+        
+        Args:
+            text: Текст для отображения
+            status_key: Ключ статуса для выбора цвета ('listening', 'recognizing', 'on', 'off')
+        """
+        try:
+            from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
+            font_size = m.window.config.font_size if m.window.config else 30
+            style = get_status_style(status_key, font_size)
+            
+            # Обновляем текст
+            QMetaObject.invokeMethod(
+                m.window.statelbl,
+                "setText",
+                Qt.QueuedConnection,
+                Q_ARG(str, text)
+            )
+            # Обновляем стиль (цвет)
+            QMetaObject.invokeMethod(
+                m.window.statelbl,
+                "setStyleSheet",
+                Qt.QueuedConnection,
+                Q_ARG(str, style)
+            )
+        except Exception as e:
+            logger.error(f"Error updating status to '{text}': {e}", exc_info=True)
+    
     # Callback функции для синхронизации UI с состоянием записи
     def on_speech_start() -> None:
         """Вызывается когда начинается реальная запись речи."""
-        try:
-            from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
-            # Используем invokeMethod с Q_ARG для безопасного обновления UI из другого потока
-            QMetaObject.invokeMethod(
-                m.window.statelbl,
-                "setText",
-                Qt.QueuedConnection,
-                Q_ARG(str, "speech-to-text on")
-            )
-        except Exception as e:
-            print(f"Error updating UI on speech start: {e}")
+        logger.info(f"⏱️  Speech detection started at {timing.time() - total_start:.2f}s")
+        update_status("🎤 Listening...", "listening")
     
     def on_speech_end() -> None:
         """Вызывается когда заканчивается запись речи."""
-        try:
-            from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
-            QMetaObject.invokeMethod(
-                m.window.statelbl,
-                "setText",
-                Qt.QueuedConnection,
-                Q_ARG(str, "speech-to-text off")
-            )
-        except Exception as e:
-            print(f"Error updating UI on speech end: {e}")
+        logger.info(f"⏱️  Speech ended at {timing.time() - total_start:.2f}s")
 
     # Используем MicrophoneStream вместо sr.Microphone (PyAudio заменен на SoundDevice)
     with MicrophoneStream(
@@ -115,42 +133,64 @@ def process_speech(m: listner.ListnerManger) -> None:
                 m.window.activateWindow()
                 m.window.raise_()
             
-            m.window.statelbl.setText("Listening...")
+            update_status("⏸️ Ready...", "on")
             # Сбрасываем таймер скрытия при активации
             if m.window.config and m.window.config.auto_hide_duration > 0:
                 m.window.hide_timer.stop()
             
             # Слушаем и распознаем речь
+            listen_start = timing.time()
+            logger.info(f"⏱️  Starting to listen at {listen_start - total_start:.2f}s...")
             audio_data = source.listen(phrase_time_limit=conf.phrase_time_limit)
+            listen_time = timing.time() - listen_start
+            logger.info(f"⏱️  Audio captured in {listen_time:.2f}s (includes pause_threshold: {m.window.config.pause_threshold if m.window.config else 0.8}s)")
+            
+            # Показываем индикатор распознавания
+            update_status("⏳ Recognizing...", "recognizing")
             
             try:
                 # Распознаем через Google Speech Recognition
+                api_start = timing.time()
+                logger.info(f"⏱️  Calling Google API at {api_start - total_start:.2f}s...")
                 result = r.recognize_google(audio_data, language=state.get_keyboard_language(), show_all=True)
+                api_time = timing.time() - api_start
+                logger.info(f"⏱️  Google API responded in {api_time:.2f}s")
                 
                 # Обрабатываем результат
+                process_start = timing.time()
+                logger.info(f"⏱️  Processing text at {process_start - total_start:.2f}s...")
                 m.process(result)
-                logger.info("Speech recognition successful")
+                process_time = timing.time() - process_start
+                logger.info(f"⏱️  Text processed in {process_time:.2f}s")
+                
+                total_time = timing.time() - total_start
+                logger.info(f"✅ TOTAL: {total_time:.2f}s | Listen: {listen_time:.2f}s | API: {api_time:.2f}s | Process: {process_time:.2f}s")
+                logger.info(f"📊 Breakdown: pause_threshold={m.window.config.pause_threshold if m.window.config else 0.8}s affects listen time")
+                
+                # Показываем успешное завершение
+                update_status("✅ Done!", "on")
             except sr.UnknownValueError:
                 logger.warning("Google Speech Recognition could not understand audio")
+                update_status("❌ Not understood", "error")
             except sr.RequestError as e:
                 logger.error(f"Network error with Google Speech Recognition: {e}", exc_info=True)
+                update_status("❌ Network error", "error")
             except Exception as e:
                 logger.error(f"Unexpected error during speech recognition: {e}", exc_info=True)
-            
-            m.window.statelbl.setText("speech-to-text off")
+                update_status("❌ Error", "error")
             
             # Запускаем таймер скрытия после окончания прослушивания
             if m.window.config and m.window.config.auto_hide_duration > 0:
                 m.window.schedule_auto_hide()
         except sr.UnknownValueError:
             logger.warning("Google Speech Recognition could not understand audio")
-            m.window.statelbl.setText("speech-to-text off")
+            update_status("❌ Not understood", "error")
         except sr.RequestError as e:
             logger.error(f"Network error with Google Speech Recognition: {e}", exc_info=True)
-            m.window.statelbl.setText("speech-to-text off")
+            update_status("❌ Network error", "error")
         except OSError as e:
             logger.error(f"OSError: {e}", exc_info=True)
-            m.window.statelbl.setText("speech-to-text off")
+            update_status("❌ Audio error", "error")
         # except TypeError as e:
         #     logger.log("TypeError service; {0}".format(e))
 

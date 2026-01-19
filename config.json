@@ -4,11 +4,11 @@
   "max_messages": 6,
   "sample_rate": 16000,
   "record_duration": 300,
-  "energy_threshold": 500,
-  "pause_threshold": 0.6,
+  "energy_threshold": 400,
+  "pause_threshold": 0.4,
   "selected_mic_index": 0,
   "listen_timeout": 10,
-  "phrase_time_limit": 10,
+  "phrase_time_limit": 8,
   "auto_hide_duration": 2,
   "output_interface": true,
   "output_clipboard": true,
@@ -17,6 +17,6 @@
   "window_offset_from_bottom": 400,
   "manager_sleep_interval": 3.0,
   "startup_delay": 2.8,
-  "clipboard_copy_delay": 0.15,
-  "paste_delay": 0.1
+  "clipboard_copy_delay": 0.05,
+  "paste_delay": 0.05
 }
