@@ -70,7 +70,3 @@ class State:
             return languages[language_id_hex]
         else:
             return languages['0x419']
-
-
-# ✅ REMOVED: Duplicate function get_keyboard_language()
-# Use State().get_keyboard_language() method instead
