@@ -73,7 +73,22 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         self.statelbl.setCursor(Qt.PointingHandCursor)
         layout.addWidget(self.statelbl)
 
-        self.statelbl.setText("⏸️ Ready...")
+        # Импортируем i18n для локализации
+        # Используем текущую раскладку клавиатуры Windows
+        try:
+            import i18n
+            import state as s
+            import config as config_module
+            
+            # Создаем временный State для определения раскладки
+            temp_config = self.config if self.config else config_module.Config()
+            temp_state = s.State(temp_config)
+            current_lang = temp_state.get_keyboard_language_code()
+            
+            self.statelbl.setText(i18n.get_status_text("ready", current_lang))
+        except (ImportError, Exception):
+            # Fallback если i18n не доступен
+            self.statelbl.setText("⏸️ Ready...")
         
         # Визуализатор громкости (progress bar)
         self.volume_bar = QProgressBar(self)

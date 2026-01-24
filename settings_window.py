@@ -228,6 +228,27 @@ class SettingsWindow(QDialog):
         appearance_layout.addWidget(auto_hide_duration_spin, 3, 1, 1, 2)
         self.controls['auto_hide_duration'] = auto_hide_duration_spin
         
+        # Язык интерфейса
+        appearance_layout.addWidget(QLabel("Язык интерфейса:"), 4, 0)
+        
+        language_combo = QComboBox()
+        language_combo.addItem("Русский (ru)", "ru")
+        language_combo.addItem("English (en)", "en")
+        language_combo.addItem("Українська (uk)", "uk")
+        language_combo.addItem("Deutsch (de)", "de")
+        language_combo.addItem("Français (fr)", "fr")
+        language_combo.addItem("Español (es)", "es")
+        
+        # Устанавливаем текущий язык
+        current_lang = getattr(self.config, 'language', 'ru')
+        for i in range(language_combo.count()):
+            if language_combo.itemData(i) == current_lang:
+                language_combo.setCurrentIndex(i)
+                break
+        
+        appearance_layout.addWidget(language_combo, 4, 1, 1, 2)
+        self.controls['language'] = language_combo
+        
         scroll_layout.addWidget(appearance_group)
         
         # ==== ГРУППА: Вывод сообщений ====
@@ -597,10 +618,16 @@ class SettingsWindow(QDialog):
                 # Для opacity слайдер дает значение 0-100, нужно разделить на 100
                 value = control.value() / 100.0
             elif isinstance(control, QComboBox):
-                # Для микрофона - берем userData (device index)
+                # Для микрофона и языка - берем userData
                 value = control.currentData()
                 if value is None:
-                    value = 0
+                    # Если это микрофон, то 0, если язык - то 'ru'
+                    if key == 'selected_mic_index':
+                        value = 0
+                    elif key == 'language':
+                        value = 'ru'
+                    else:
+                        value = 0
             elif isinstance(control, (QSpinBox, QDoubleSpinBox)):
                 value = control.value()
             elif isinstance(control, QSlider):
@@ -610,6 +637,11 @@ class SettingsWindow(QDialog):
             elif isinstance(control, QLineEdit):
                 # ✅ Поддержка QLineEdit для hotkey
                 value = control.text()
+            elif isinstance(control, QComboBox) and key == 'language':
+                # ✅ Для языка берем userData
+                value = control.currentData()
+                if value is None:
+                    value = 'ru'  # По умолчанию русский
             else:
                 value = control.value()
             

@@ -139,6 +139,11 @@ class Config:
             'min': 0.01,
             'max': 1.0,
             'default': 0.1
+        },
+        'language': {
+            'type': str,
+            'default': 'ru',
+            'allowed_values': ['ru', 'en', 'uk', 'de', 'fr', 'es']
         }
     }
     
@@ -153,6 +158,17 @@ class Config:
         
         # Load saved settings
         self.load()
+        
+        # Инициализируем язык интерфейса, если не задан
+        if not hasattr(self, 'language') or not self.language:
+            try:
+                import i18n
+                detected_lang = i18n.detect_system_language()
+                self.language = detected_lang
+                # Сохраняем автоматически определенный язык
+                self.save()
+            except (ImportError, AttributeError):
+                self.language = 'ru'
     
     def to_dict(self):
         """Преобразует конфиг в словарь для сохранения"""
@@ -176,7 +192,8 @@ class Config:
             'manager_sleep_interval': self.manager_sleep_interval,
             'startup_delay': self.startup_delay,
             'clipboard_copy_delay': self.clipboard_copy_delay,
-            'paste_delay': self.paste_delay
+            'paste_delay': self.paste_delay,
+            'language': self.language
         }
     
     def _apply_defaults(self):

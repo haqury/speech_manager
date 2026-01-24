@@ -23,6 +23,7 @@ from audio_recorder import MicrophoneStream
 import subtitle_speach
 from subtitle_speach.status_colors import get_status_style
 import settings_window
+import i18n
 
 from PyQt5.Qt import *
 from PyQt5.QtGui import QIcon, QPixmap
@@ -126,8 +127,10 @@ def process_speech(m: listner.ListnerManger) -> None:
     def on_speech_start() -> None:
         """Вызывается когда начинается реальная запись речи."""
         logger.info(f"⏱️  Speech detection started at {timing.time() - total_start:.2f}s")
-        update_status("🎤 Listening...", "listening")
-    
+        # Определяем язык по текущей раскладке клавиатуры Windows
+        current_lang = state.get_keyboard_language_code()
+        update_status(i18n.get_status_text("listening", current_lang), "listening")
+
     def on_speech_end() -> None:
         """Вызывается когда заканчивается запись речи."""
         logger.info(f"⏱️  Speech ended at {timing.time() - total_start:.2f}s")
@@ -151,7 +154,9 @@ def process_speech(m: listner.ListnerManger) -> None:
                 m.window.activateWindow()
                 m.window.raise_()
             
-            update_status("⏸️ Ready...", "on")
+            # Определяем язык по текущей раскладке клавиатуры Windows
+            current_lang = state.get_keyboard_language_code()
+            update_status(i18n.get_status_text("ready", current_lang), "on")
             # Показываем визуализатор громкости
             m.window.show_volume_bar(True)
             # Сбрасываем таймер скрытия при активации
@@ -166,7 +171,9 @@ def process_speech(m: listner.ListnerManger) -> None:
             logger.info(f"⏱️  Audio captured in {listen_time:.2f}s (includes pause_threshold: {m.window.config.pause_threshold if m.window.config else 0.8}s)")
             
             # Показываем индикатор распознавания
-            update_status("⏳ Recognizing...", "recognizing")
+            # Определяем язык по текущей раскладке клавиатуры Windows
+            current_lang = state.get_keyboard_language_code()
+            update_status(i18n.get_status_text("recognizing", current_lang), "recognizing")
             
             try:
                 # Распознаем через Google Speech Recognition
@@ -188,16 +195,24 @@ def process_speech(m: listner.ListnerManger) -> None:
                 logger.info(f"📊 Breakdown: pause_threshold={m.window.config.pause_threshold if m.window.config else 0.8}s affects listen time")
                 
                 # Показываем успешное завершение
-                update_status("✅ Done!", "on")
+                # Определяем язык по текущей раскладке клавиатуры Windows
+                current_lang = state.get_keyboard_language_code()
+                update_status(i18n.get_status_text("done", current_lang), "on")
             except sr.UnknownValueError:
                 logger.warning("Google Speech Recognition could not understand audio")
-                update_status("❌ Not understood", "error")
+                # Определяем язык по текущей раскладке клавиатуры Windows
+                current_lang = state.get_keyboard_language_code()
+                update_status(i18n.get_status_text("not_understood", current_lang), "error")
             except sr.RequestError as e:
                 logger.error(f"Network error with Google Speech Recognition: {e}", exc_info=True)
-                update_status("❌ Network error", "error")
+                # Определяем язык по текущей раскладке клавиатуры Windows
+                current_lang = state.get_keyboard_language_code()
+                update_status(i18n.get_status_text("network_error", current_lang), "error")
             except Exception as e:
                 logger.error(f"Unexpected error during speech recognition: {e}", exc_info=True)
-                update_status("❌ Error", "error")
+                # Определяем язык по текущей раскладке клавиатуры Windows
+                current_lang = state.get_keyboard_language_code()
+                update_status(i18n.get_status_text("error", current_lang), "error")
             
             # Скрываем визуализатор громкости и сбрасываем значение
             m.window.show_volume_bar(False)
@@ -208,17 +223,23 @@ def process_speech(m: listner.ListnerManger) -> None:
                 m.window.schedule_auto_hide()
         except sr.UnknownValueError:
             logger.warning("Google Speech Recognition could not understand audio")
-            update_status("❌ Not understood", "error")
+            # Определяем язык по текущей раскладке клавиатуры Windows
+            current_lang = state.get_keyboard_language_code()
+            update_status(i18n.get_status_text("not_understood", current_lang), "error")
             m.window.show_volume_bar(False)
             m.window.update_volume(0)
         except sr.RequestError as e:
             logger.error(f"Network error with Google Speech Recognition: {e}", exc_info=True)
-            update_status("❌ Network error", "error")
+            # Определяем язык по текущей раскладке клавиатуры Windows
+            current_lang = state.get_keyboard_language_code()
+            update_status(i18n.get_status_text("network_error", current_lang), "error")
             m.window.show_volume_bar(False)
             m.window.update_volume(0)
         except OSError as e:
             logger.error(f"OSError: {e}", exc_info=True)
-            update_status("❌ Audio error", "error")
+            # Определяем язык по текущей раскладке клавиатуры Windows
+            current_lang = state.get_keyboard_language_code()
+            update_status(i18n.get_status_text("audio_error", current_lang), "error")
             m.window.show_volume_bar(False)
             m.window.update_volume(0)
         # except TypeError as e:
