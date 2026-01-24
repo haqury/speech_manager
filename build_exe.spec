@@ -36,6 +36,7 @@ a = Analysis(
         'logger_config',
         'threading_manager',
         'settings_window',
+        'i18n',  # Модуль локализации
         
         # Windows
         'win32api',
