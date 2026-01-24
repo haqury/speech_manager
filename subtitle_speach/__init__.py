@@ -150,9 +150,24 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         # Применяем настройки при инициализации
         self.apply_config_settings()
 
-    def addAnswer(self, str):
+    def addAnswer(self, text: str):
+        """
+        Добавляет текст в следующее доступное поле сообщения.
+        Обрезает текст до максимальной длины, если настроено.
+        
+        Args:
+            text: Текст для отображения
+        """
         lbl = self.getNextLabel()
-        lbl.setText(str)
+        
+        # Обрезаем текст до максимальной длины, если настроено
+        if self.config and hasattr(self.config, 'max_message_length'):
+            max_length = self.config.max_message_length
+            if max_length > 0 and len(text) > max_length:
+                # Обрезаем и добавляем индикатор обрезки
+                text = text[:max_length - 3] + "..."
+        
+        lbl.setText(text)
         self.schedule_auto_hide()
     
     def update_volume(self, volume: int) -> None:

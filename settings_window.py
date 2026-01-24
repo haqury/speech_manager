@@ -216,8 +216,20 @@ class SettingsWindow(QDialog):
         appearance_layout.addWidget(max_messages_spin, 2, 1, 1, 2)
         self.controls['max_messages'] = max_messages_spin
         
+        # Максимальная длина текста в сообщении
+        appearance_layout.addWidget(QLabel("Максимальная длина текста в сообщении:"), 3, 0)
+        
+        max_length_spin = QSpinBox()
+        max_length_spin.setRange(10, 10000)
+        max_length_spin.setValue(getattr(self.config, 'max_message_length', 500))
+        max_length_spin.setFixedWidth(100)
+        max_length_spin.setToolTip("Максимальное количество символов в одном сообщении. 0 = без ограничений")
+        
+        appearance_layout.addWidget(max_length_spin, 3, 1, 1, 2)
+        self.controls['max_message_length'] = max_length_spin
+        
         # Длительность отображения (0 = не пропадать)
-        appearance_layout.addWidget(QLabel("Длительность отображения (сек, 0=не пропадать):"), 3, 0)
+        appearance_layout.addWidget(QLabel("Длительность отображения (сек, 0=не пропадать):"), 4, 0)
         
         auto_hide_duration_spin = QSpinBox()
         auto_hide_duration_spin.setRange(0, 300)
@@ -225,11 +237,11 @@ class SettingsWindow(QDialog):
         auto_hide_duration_spin.setFixedWidth(70)
         auto_hide_duration_spin.setToolTip("0 = окно не будет автоматически скрываться")
         
-        appearance_layout.addWidget(auto_hide_duration_spin, 3, 1, 1, 2)
+        appearance_layout.addWidget(auto_hide_duration_spin, 4, 1, 1, 2)
         self.controls['auto_hide_duration'] = auto_hide_duration_spin
         
         # Язык интерфейса
-        appearance_layout.addWidget(QLabel("Язык интерфейса:"), 4, 0)
+        appearance_layout.addWidget(QLabel("Язык интерфейса:"), 5, 0)
         
         language_combo = QComboBox()
         language_combo.addItem("Русский (ru)", "ru")
@@ -246,8 +258,15 @@ class SettingsWindow(QDialog):
                 language_combo.setCurrentIndex(i)
                 break
         
-        appearance_layout.addWidget(language_combo, 4, 1, 1, 2)
+        appearance_layout.addWidget(language_combo, 5, 1, 1, 2)
         self.controls['language'] = language_combo
+        
+        # Возможность остановить запись повторным нажатием горячей клавиши
+        stop_recording_checkbox = QCheckBox("Останавливать запись повторным нажатием горячей клавиши")
+        stop_recording_checkbox.setChecked(getattr(self.config, 'enable_hotkey_stop_recording', True))
+        stop_recording_checkbox.setToolTip("Если включено, повторное нажатие горячей клавиши во время записи остановит запись и продолжит с распознавания")
+        appearance_layout.addWidget(stop_recording_checkbox, 6, 0, 1, 3)
+        self.controls['enable_hotkey_stop_recording'] = stop_recording_checkbox
         
         scroll_layout.addWidget(appearance_group)
         

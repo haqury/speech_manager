@@ -99,6 +99,7 @@ class AudioRecorder:
         
         # Recording state
         self.is_recording = False
+        self.should_stop = False  # Флаг для остановки записи по горячей клавише
         self.audio_queue = queue.Queue()
         
     def get_energy(self, audio_data: np.ndarray) -> float:
@@ -187,8 +188,22 @@ class AudioRecorder:
             ) as stream:
                 
                 chunk_count = 0
+                self.is_recording = True
+                self.should_stop = False
                 
                 while True:
+                    # Проверяем флаг остановки
+                    if self.should_stop:
+                        print("Recording stopped by hotkey")
+                        # Если речь уже началась, вызываем callback окончания
+                        if started_speaking and self.on_speech_end:
+                            try:
+                                self.on_speech_end()
+                            except Exception as e:
+                                print(f"Error in on_speech_end callback: {e}")
+                        self.is_recording = False
+                        break
+                    
                     # Read audio chunk
                     audio_chunk, overflowed = stream.read(chunk_size)
                     
@@ -253,6 +268,8 @@ class AudioRecorder:
         except Exception as e:
             print(f"Recording error: {e}")
             raise
+        finally:
+            self.is_recording = False
         
         if not recorded_frames:
             # Return empty audio if nothing recorded
@@ -312,6 +329,15 @@ class MicrophoneStream:
     
     def __init__(self, **kwargs):
         self.recorder = AudioRecorder(**kwargs)
+    
+    def stop_recording(self):
+        """Останавливает текущую запись."""
+        if self.recorder:
+            self.recorder.should_stop = True
+    
+    def is_recording(self) -> bool:
+        """Проверяет, идет ли сейчас запись."""
+        return self.recorder.is_recording if self.recorder else False
     
     def __enter__(self):
         return self

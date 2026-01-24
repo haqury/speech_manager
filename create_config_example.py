@@ -49,14 +49,13 @@ def create_config_example():
             if 'default' in schema:
                 default_config[key] = schema['default']
         
-        # Создаем example config: берем структуру из user_config, но значения из дефолтов
-        # Это сохраняет все ключи, но с безопасными дефолтными значениями
-        example_config = {}
+        # Создаем example config: берем все ключи из схемы с дефолтными значениями
+        # Также добавляем ключи из user_config, которых нет в схеме (для обратной совместимости)
+        example_config = default_config.copy()  # Начинаем с дефолтных значений из схемы
+        
+        # Добавляем ключи из user_config, которых нет в схеме (старые/нестандартные ключи)
         for key in user_config.keys():
-            if key in default_config:
-                example_config[key] = default_config[key]
-            else:
-                # Если ключа нет в схеме, берем значение из user_config
+            if key not in default_config:
                 example_config[key] = user_config[key]
         
     except ImportError:

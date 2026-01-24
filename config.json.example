@@ -2,6 +2,7 @@
   "opacity": 0.95,
   "font_size": 11,
   "max_messages": 30,
+  "max_message_length": 500,
   "sample_rate": 16000,
   "record_duration": 300,
   "energy_threshold": 300,
@@ -18,5 +19,7 @@
   "manager_sleep_interval": 3.0,
   "startup_delay": 2.8,
   "clipboard_copy_delay": 0.15,
-  "paste_delay": 0.1
+  "paste_delay": 0.1,
+  "language": "ru",
+  "enable_hotkey_stop_recording": true
 }

@@ -45,6 +45,12 @@ class Config:
             'max': 1000,
             'default': 30
         },
+        'max_message_length': {
+            'type': int,
+            'min': 10,
+            'max': 10000,
+            'default': 500
+        },
         'sample_rate': {
             'type': int,
             'min': 8000,
@@ -144,6 +150,10 @@ class Config:
             'type': str,
             'default': 'ru',
             'allowed_values': ['ru', 'en', 'uk', 'de', 'fr', 'es']
+        },
+        'enable_hotkey_stop_recording': {
+            'type': bool,
+            'default': True
         }
     }
     
@@ -176,6 +186,7 @@ class Config:
             'opacity': self.opacity,
             'font_size': self.font_size,
             'max_messages': self.max_messages,
+            'max_message_length': self.max_message_length,
             'sample_rate': self.sample_rate,
             'record_duration': self.record_duration,
             'energy_threshold': self.energy_threshold,
@@ -193,7 +204,8 @@ class Config:
             'startup_delay': self.startup_delay,
             'clipboard_copy_delay': self.clipboard_copy_delay,
             'paste_delay': self.paste_delay,
-            'language': self.language
+            'language': self.language,
+            'enable_hotkey_stop_recording': self.enable_hotkey_stop_recording
         }
     
     def _apply_defaults(self):

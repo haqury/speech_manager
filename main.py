@@ -11,6 +11,7 @@ Speech Manager - приложение для распознавания речи
 import sys
 import time
 import logging
+import threading
 from win32api import GetSystemMetrics
 import keyboard
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -63,6 +64,9 @@ thread_manager = ThreadManager()
 # Печатаем информацию о режиме многопоточности
 print_threading_info()
 
+# Глобальная переменная для отслеживания текущего процесса записи
+current_recording_source = None
+recording_lock = threading.Lock()
 
 
 def process_speech(m: listner.ListnerManger) -> None:
@@ -74,8 +78,33 @@ def process_speech(m: listner.ListnerManger) -> None:
     Args:
         m: Экземпляр ListnerManger для обработки распознанного текста
     """
+    global current_recording_source
+    
     import time as timing
     total_start = timing.time()
+    
+    # Проверяем, идет ли уже запись, и если включена опция - останавливаем её
+    with recording_lock:
+        if current_recording_source is not None and current_recording_source.is_recording():
+            if m.window.config and getattr(m.window.config, 'enable_hotkey_stop_recording', True):
+                logger.info("⏹️  Stopping current recording via hotkey...")
+                current_recording_source.stop_recording()
+                # Обновляем статус
+                try:
+                    from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
+                    current_lang = state.get_keyboard_language_code()
+                    status_text = i18n.get_status_text("ready", current_lang)
+                    QMetaObject.invokeMethod(
+                        m.window.statelbl,
+                        "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG(str, status_text)
+                    )
+                except:
+                    pass
+                return
+        current_recording_source = None
+    
     logger.info("=" * 60)
     logger.info("🎤 Started speech recognition process")
 
@@ -172,6 +201,9 @@ def process_speech(m: listner.ListnerManger) -> None:
         on_speech_end=on_speech_end,
         on_volume_update=on_volume_update
     ) as source:
+        # Сохраняем ссылку на текущий источник записи
+        with recording_lock:
+            current_recording_source = source
         try:
             # Показываем окно при активации прослушивания
             if not m.window.isVisible():
@@ -193,6 +225,10 @@ def process_speech(m: listner.ListnerManger) -> None:
             audio_data = source.listen(phrase_time_limit=conf.phrase_time_limit)
             listen_time = timing.time() - listen_start
             logger.info(f"⏱️  Audio captured in {listen_time:.2f}s (includes pause_threshold: {m.window.config.pause_threshold if m.window.config else 0.8}s)")
+            
+            # Проверяем, была ли запись остановлена вручную
+            if source.recorder.should_stop:
+                logger.info("⏹️  Recording was stopped by hotkey, processing captured audio...")
             
             # Показываем индикатор распознавания
             # Язык будет определен автоматически внутри update_status
@@ -258,6 +294,11 @@ def process_speech(m: listner.ListnerManger) -> None:
             update_status("audio_error")
             m.window.show_volume_bar(False)
             m.window.update_volume(0)
+        finally:
+            # Очищаем ссылку на источник записи
+            with recording_lock:
+                if current_recording_source == source:
+                    current_recording_source = None
         # except TypeError as e:
         #     logger.log("TypeError service; {0}".format(e))
 
