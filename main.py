@@ -170,10 +170,10 @@ def process_speech(m: listner.ListnerManger) -> None:
                 Qt.QueuedConnection,
                 Q_ARG(str, style)
             )
-            # Подстраиваем ширину окна под новый текст
+            # Подстраиваем размер окна под новый текст
             QMetaObject.invokeMethod(
                 m.window,
-                "adjust_window_width",
+                "adjust_window_size",
                 Qt.QueuedConnection
             )
         except Exception as e:
@@ -323,11 +323,11 @@ def view_wget() -> None:
     Устанавливает размер, позицию и запускает Qt event loop.
     """
     # Начальный размер будет подстроен автоматически при первом добавлении текста
-    # Устанавливаем минимальную начальную ширину
+    # Устанавливаем минимальную начальную ширину и высоту
     w.resize(300, 150)
     w.show()
-    # Подстраиваем ширину под текущее содержимое при первом показе
-    w.adjust_window_width()
+    # Подстраиваем размер под текущее содержимое при первом показе
+    w.adjust_window_size()
     w.move(GetSystemMetrics(0) - w.size().width(), GetSystemMetrics(1) - conf.window_offset_from_bottom)
     sys.exit(app.exec())
 

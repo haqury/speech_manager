@@ -5,11 +5,6 @@
 - **📋 Auto-create Config**: On first run, if `config.json` is not found, the application automatically creates it with default values
 - **📝 Copy config.json.example**: During build, `config.json.example` is automatically copied to the `dist` folder for users
 
-### Improvements
-- **🔧 Config Loading Logic**: Config is now searched in the folder with the executable file (for .exe) or in the current working directory (for Python script)
-- **📊 Log File**: `speech_manager.log` is now also created in the folder with the .exe file
-- **🪟 Adaptive Window Width**: Window width automatically adjusts to the length of the longest text in messages
-
 ### Bug Fixes
 - **🐛 Fixed**: Config was being searched in the wrong directory when running from .exe
 
@@ -20,3 +15,23 @@
 - Updated logging to use the same directory as config
 
 Full changelog: https://github.com/haqury/speech_manager/blob/main/CHANGELOG.md
+
+---
+
+## Что нового в v1.1.3
+
+### Новые возможности
+- **📁 Портативная конфигурация**: Приложение теперь ищет и создает `config.json` в папке с .exe файлом, а не в папке исходников
+- **📋 Автоматическое создание конфига**: При первом запуске, если `config.json` не найден, приложение автоматически создает его с дефолтными значениями
+- **📝 Копирование config.json.example**: При сборке `config.json.example` автоматически копируется в папку `dist` для пользователей
+
+### Исправления
+- **🐛 Исправлено**: Конфиг искался в неправильной директории при запуске из .exe
+
+### Технические изменения
+- Добавлены методы `get_config_dir()` и `get_config_path()` в класс `Config`
+- Обновлен `Config.load()` для попытки загрузки из `config.json.example`, если `config.json` не найден
+- Обновлен `build.bat` для копирования `config.json.example` в папку `dist`
+- Обновлено логирование для использования той же директории, что и конфиг
+
+Полный список изменений: https://github.com/haqury/speech_manager/blob/main/CHANGELOG.md

@@ -168,8 +168,8 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
                 text = text[:max_length - 3] + "..."
         
         lbl.setText(text)
-        # Автоматически подстраиваем ширину окна под содержимое
-        self.adjust_window_width()
+        # Автоматически подстраиваем размер окна под содержимое
+        self.adjust_window_size()
         self.schedule_auto_hide()
     
     def update_volume(self, volume: int) -> None:
@@ -275,6 +275,84 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
             current_height = self.height()
             self.resize(optimal_width, current_height)
     
+    def adjust_window_height(self):
+        """
+        Автоматически подстраивает высоту окна под количество видимых сообщений.
+        Оставляет сверху и снизу отступы равные половине высоты одного инпута.
+        """
+        if not self.config:
+            return
+        
+        # Подсчитываем количество лейблов с текстом
+        visible_labels_count = 0
+        
+        # Проверяем statelbl (всегда учитываем, если есть текст)
+        if self.statelbl.text():
+            visible_labels_count += 1
+        
+        # Подсчитываем labels с сообщениями, которые имеют текст
+        for lbl in self.labels:
+            if lbl.text():
+                visible_labels_count += 1
+        
+        # Если нет видимых элементов, используем минимальную высоту
+        if visible_labels_count == 0:
+            min_height = 150
+            current_width = self.width()
+            self.resize(current_width, min_height)
+            return
+        
+        # Получаем высоту одного лейбла на основе размера шрифта
+        font = self.statelbl.font()
+        font.setPointSize(self.config.font_size)
+        font_metrics = QFontMetrics(font)
+        
+        # Высота одной строки текста + отступы внутри лейбла
+        line_height = font_metrics.height()
+        label_height = line_height + 10  # Добавляем небольшой отступ внутри лейбла
+        
+        # Высота statelbl (если видим)
+        statelbl_height = label_height if self.statelbl.text() else 0
+        
+        # Высота volume_bar (если видим)
+        volume_bar_height = self.volume_bar.height() if self.volume_bar.isVisible() else 0
+        
+        # Высота widget (линия сверху)
+        widget_height = self.widget.height() if self.widget.isVisible() else 0
+        
+        # Высота всех сообщений
+        messages_height = (visible_labels_count - (1 if self.statelbl.text() else 0)) * label_height
+        
+        # Отступы сверху и снизу (по половине высоты одного инпута)
+        top_padding = label_height // 2
+        bottom_padding = label_height // 2
+        
+        # Общая высота окна
+        total_height = (
+            widget_height +
+            statelbl_height +
+            volume_bar_height +
+            messages_height +
+            top_padding +
+            bottom_padding +
+            20  # Небольшой дополнительный отступ для layout
+        )
+        
+        # Минимальная высота окна
+        min_height = 150
+        optimal_height = max(min_height, total_height)
+        
+        # Устанавливаем новую высоту, сохраняя текущую ширину
+        current_width = self.width()
+        self.resize(current_width, optimal_height)
+    
+    def adjust_window_size(self):
+        """
+        Автоматически подстраивает ширину и высоту окна под содержимое.
+        """
+        self.adjust_window_width()
+        self.adjust_window_height()
+    
     def apply_config_settings(self):
         """Применяет настройки из config к окну"""
         if not self.config:
@@ -326,8 +404,8 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
                 layout.insertWidget(layout.count() - 1, new_lbl)
                 self.labels.append(new_lbl)
         
-        # Подстраиваем ширину окна после изменения настроек
-        self.adjust_window_width()
+        # Подстраиваем размер окна после изменения настроек
+        self.adjust_window_size()
     
     def _cleanup_excess_labels(self, target_count: int):
         """
