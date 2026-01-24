@@ -80,18 +80,44 @@ def process_speech(m: listner.ListnerManger) -> None:
     logger.info("🎤 Started speech recognition process")
 
     # Вспомогательная функция для обновления статуса с цветом
-    def update_status(text: str, status_key: str) -> None:
+    def update_status(status_key: str, use_text: str = None) -> None:
         """
         Обновляет текст и цвет статусного лейбла.
+        Автоматически определяет язык по текущей раскладке клавиатуры при каждом обновлении.
         
         Args:
-            text: Текст для отображения
-            status_key: Ключ статуса для выбора цвета ('listening', 'recognizing', 'on', 'off')
+            status_key: Ключ статуса для текста ('listening', 'recognizing', 'ready', 'done', 'not_understood', 'network_error', 'error', 'audio_error')
+            use_text: Опциональный текст для отображения (если не указан, используется перевод по status_key)
         """
         try:
             from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
+            
+            # Определяем язык по текущей раскладке клавиатуры Windows ПРИ КАЖДОМ обновлении
+            current_lang = state.get_keyboard_language_code()
+            
+            # Получаем текст статуса на текущем языке
+            if use_text is None:
+                text = i18n.get_status_text(status_key, current_lang)
+            else:
+                text = use_text
+            
+            # Маппинг ключей текста на ключи цветов
+            color_key_map = {
+                'listening': 'listening',      # Зеленый
+                'recognizing': 'recognizing',   # Оранжевый
+                'ready': 'on',                  # Зеленый (активно)
+                'done': 'on',                   # Зеленый (успех)
+                'not_understood': 'error',      # Красный
+                'network_error': 'error',       # Красный
+                'error': 'error',               # Красный
+                'audio_error': 'error',         # Красный
+            }
+            
+            # Получаем ключ цвета
+            color_key = color_key_map.get(status_key, 'off')
+            
             font_size = m.window.config.font_size if m.window.config else 30
-            style = get_status_style(status_key, font_size)
+            style = get_status_style(color_key, font_size)
             
             # Обновляем текст
             QMetaObject.invokeMethod(
@@ -108,7 +134,7 @@ def process_speech(m: listner.ListnerManger) -> None:
                 Q_ARG(str, style)
             )
         except Exception as e:
-            logger.error(f"Error updating status to '{text}': {e}", exc_info=True)
+            logger.error(f"Error updating status '{status_key}': {e}", exc_info=True)
     
     # Callback для обновления громкости
     def on_volume_update(volume: int) -> None:
@@ -127,9 +153,8 @@ def process_speech(m: listner.ListnerManger) -> None:
     def on_speech_start() -> None:
         """Вызывается когда начинается реальная запись речи."""
         logger.info(f"⏱️  Speech detection started at {timing.time() - total_start:.2f}s")
-        # Определяем язык по текущей раскладке клавиатуры Windows
-        current_lang = state.get_keyboard_language_code()
-        update_status(i18n.get_status_text("listening", current_lang), "listening")
+        # Язык будет определен автоматически внутри update_status
+        update_status("listening")
 
     def on_speech_end() -> None:
         """Вызывается когда заканчивается запись речи."""
@@ -154,9 +179,8 @@ def process_speech(m: listner.ListnerManger) -> None:
                 m.window.activateWindow()
                 m.window.raise_()
             
-            # Определяем язык по текущей раскладке клавиатуры Windows
-            current_lang = state.get_keyboard_language_code()
-            update_status(i18n.get_status_text("ready", current_lang), "on")
+            # Язык будет определен автоматически внутри update_status
+            update_status("ready")
             # Показываем визуализатор громкости
             m.window.show_volume_bar(True)
             # Сбрасываем таймер скрытия при активации
@@ -171,9 +195,8 @@ def process_speech(m: listner.ListnerManger) -> None:
             logger.info(f"⏱️  Audio captured in {listen_time:.2f}s (includes pause_threshold: {m.window.config.pause_threshold if m.window.config else 0.8}s)")
             
             # Показываем индикатор распознавания
-            # Определяем язык по текущей раскладке клавиатуры Windows
-            current_lang = state.get_keyboard_language_code()
-            update_status(i18n.get_status_text("recognizing", current_lang), "recognizing")
+            # Язык будет определен автоматически внутри update_status
+            update_status("recognizing")
             
             try:
                 # Распознаем через Google Speech Recognition
@@ -195,24 +218,20 @@ def process_speech(m: listner.ListnerManger) -> None:
                 logger.info(f"📊 Breakdown: pause_threshold={m.window.config.pause_threshold if m.window.config else 0.8}s affects listen time")
                 
                 # Показываем успешное завершение
-                # Определяем язык по текущей раскладке клавиатуры Windows
-                current_lang = state.get_keyboard_language_code()
-                update_status(i18n.get_status_text("done", current_lang), "on")
+                # Язык будет определен автоматически внутри update_status
+                update_status("done")
             except sr.UnknownValueError:
                 logger.warning("Google Speech Recognition could not understand audio")
-                # Определяем язык по текущей раскладке клавиатуры Windows
-                current_lang = state.get_keyboard_language_code()
-                update_status(i18n.get_status_text("not_understood", current_lang), "error")
+                # Язык будет определен автоматически внутри update_status
+                update_status("not_understood")
             except sr.RequestError as e:
                 logger.error(f"Network error with Google Speech Recognition: {e}", exc_info=True)
-                # Определяем язык по текущей раскладке клавиатуры Windows
-                current_lang = state.get_keyboard_language_code()
-                update_status(i18n.get_status_text("network_error", current_lang), "error")
+                # Язык будет определен автоматически внутри update_status
+                update_status("network_error")
             except Exception as e:
                 logger.error(f"Unexpected error during speech recognition: {e}", exc_info=True)
-                # Определяем язык по текущей раскладке клавиатуры Windows
-                current_lang = state.get_keyboard_language_code()
-                update_status(i18n.get_status_text("error", current_lang), "error")
+                # Язык будет определен автоматически внутри update_status
+                update_status("error")
             
             # Скрываем визуализатор громкости и сбрасываем значение
             m.window.show_volume_bar(False)
@@ -223,23 +242,20 @@ def process_speech(m: listner.ListnerManger) -> None:
                 m.window.schedule_auto_hide()
         except sr.UnknownValueError:
             logger.warning("Google Speech Recognition could not understand audio")
-            # Определяем язык по текущей раскладке клавиатуры Windows
-            current_lang = state.get_keyboard_language_code()
-            update_status(i18n.get_status_text("not_understood", current_lang), "error")
+            # Язык будет определен автоматически внутри update_status
+            update_status("not_understood")
             m.window.show_volume_bar(False)
             m.window.update_volume(0)
         except sr.RequestError as e:
             logger.error(f"Network error with Google Speech Recognition: {e}", exc_info=True)
-            # Определяем язык по текущей раскладке клавиатуры Windows
-            current_lang = state.get_keyboard_language_code()
-            update_status(i18n.get_status_text("network_error", current_lang), "error")
+            # Язык будет определен автоматически внутри update_status
+            update_status("network_error")
             m.window.show_volume_bar(False)
             m.window.update_volume(0)
         except OSError as e:
             logger.error(f"OSError: {e}", exc_info=True)
-            # Определяем язык по текущей раскладке клавиатуры Windows
-            current_lang = state.get_keyboard_language_code()
-            update_status(i18n.get_status_text("audio_error", current_lang), "error")
+            # Язык будет определен автоматически внутри update_status
+            update_status("audio_error")
             m.window.show_volume_bar(False)
             m.window.update_volume(0)
         # except TypeError as e:
