@@ -19,6 +19,14 @@ if errorlevel 1 (
 echo ✅ PyInstaller найден
 echo.
 
+REM Создаем config.json.example из config.json (без ключей)
+echo 📝 Создание config.json.example...
+python create_config_example.py
+if errorlevel 1 (
+    echo ⚠️  Не удалось создать config.json.example, продолжаем сборку...
+)
+echo.
+
 REM Очистка старых файлов
 echo 🧹 Очистка старых файлов...
 if exist build rmdir /s /q build

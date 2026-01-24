@@ -67,7 +67,13 @@ mkdir temp_exe_release
 REM Копируем файлы для пользователей
 echo Копирование файлов...
 copy "dist\SpeechManager.exe" "temp_exe_release\" >nul
-copy "config.json" "temp_exe_release\config.json.example" >nul
+
+REM Создаем config.json.example если его нет
+if not exist "config.json.example" (
+    echo Создание config.json.example...
+    python create_config_example.py
+)
+copy "config.json.example" "temp_exe_release\config.json.example" >nul
 copy "README.md" "temp_exe_release\" >nul
 copy "CHANGELOG.md" "temp_exe_release\" >nul
 copy "LICENSE" "temp_exe_release\" >nul

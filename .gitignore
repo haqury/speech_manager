@@ -148,3 +148,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Config files (user-specific, not committed)
+config.json
+# config.json.example is committed as template

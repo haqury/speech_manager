@@ -11,7 +11,8 @@ a = Analysis(
     pathex=['.'],  # Добавляем текущую директорию для поиска модулей
     binaries=[],
     datas=[
-        ('config.json', '.'),
+        # Не копируем config.json - приложение создаст его автоматически при первом запуске
+        # config.json.example создается скриптом create_config_example.py перед сборкой
     ],
     hiddenimports=[
         # PyQt5
