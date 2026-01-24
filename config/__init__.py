@@ -25,6 +25,35 @@ class Config:
     
     CONFIG_FILE = 'config.json'
     
+    @staticmethod
+    def get_config_dir():
+        """
+        Определяет директорию для хранения конфигурации.
+        В режиме .exe - папка с .exe файлом, иначе - текущая рабочая директория.
+        
+        Returns:
+            str: Путь к директории с конфигурацией
+        """
+        import sys
+        if getattr(sys, 'frozen', False):
+            # Запущено из .exe файла
+            # sys.executable содержит путь к .exe
+            exe_dir = os.path.dirname(sys.executable)
+            return exe_dir
+        else:
+            # Запущено из Python скрипта
+            return os.getcwd()
+    
+    def get_config_path(self):
+        """
+        Возвращает полный путь к файлу конфигурации.
+        
+        Returns:
+            str: Полный путь к config.json
+        """
+        config_dir = self.get_config_dir()
+        return os.path.join(config_dir, self.CONFIG_FILE)
+    
     # ✅ Define allowed config keys with types and constraints
     CONFIG_SCHEMA = {
         'opacity': {
@@ -332,9 +361,15 @@ class Config:
             True if successful, False otherwise
         """
         try:
-            with open(self.CONFIG_FILE, 'w', encoding='utf-8') as f:
+            config_path = self.get_config_path()
+            # Создаем директорию, если её нет
+            config_dir = os.path.dirname(config_path)
+            if config_dir and not os.path.exists(config_dir):
+                os.makedirs(config_dir, exist_ok=True)
+            
+            with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
-            logger.info(f"Config saved to {self.CONFIG_FILE}")
+            logger.info(f"Config saved to {config_path}")
             return True
         except Exception as e:
             logger.error(f"Failed to save config: {e}", exc_info=True)
@@ -343,36 +378,65 @@ class Config:
     def load(self) -> bool:
         """
         Load config from file with validation.
+        Если файл не найден, пытается загрузить из config.json.example,
+        а если и его нет - создает новый config.json с дефолтными значениями.
         
         Returns:
             True if successful, False otherwise
         """
-        if not os.path.exists(self.CONFIG_FILE):
-            logger.info(f"Config file {self.CONFIG_FILE} not found, using defaults")
-            return False
+        config_path = self.get_config_path()
+        config_example_path = os.path.join(self.get_config_dir(), 'config.json.example')
         
-        try:
-            with open(self.CONFIG_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
-            # Validate that data is a dictionary
-            if not isinstance(data, dict):
-                raise ConfigValidationError("Config must be a JSON object")
-            
-            # Load with validation
-            self.from_dict(data)
-            logger.info(f"Config loaded from {self.CONFIG_FILE}")
-            return True
-            
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in config file: {e}")
-            return False
-        except ConfigValidationError as e:
-            logger.error(f"Config validation failed: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"Failed to load config: {e}", exc_info=True)
-            return False
+        # Сначала пытаемся загрузить config.json
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                # Validate that data is a dictionary
+                if not isinstance(data, dict):
+                    raise ConfigValidationError("Config must be a JSON object")
+                
+                # Load with validation
+                self.from_dict(data)
+                logger.info(f"Config loaded from {config_path}")
+                return True
+                
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON in config file: {e}")
+                # Продолжаем попытку загрузить из example
+            except ConfigValidationError as e:
+                logger.error(f"Config validation failed: {e}")
+                # Продолжаем попытку загрузить из example
+            except Exception as e:
+                logger.error(f"Failed to load config: {e}", exc_info=True)
+                # Продолжаем попытку загрузить из example
+        
+        # Если config.json не найден или невалиден, пытаемся загрузить из config.json.example
+        if os.path.exists(config_example_path):
+            try:
+                logger.info(f"Config file {config_path} not found, trying {config_example_path}")
+                with open(config_example_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                if not isinstance(data, dict):
+                    raise ConfigValidationError("Config must be a JSON object")
+                
+                self.from_dict(data)
+                # Сохраняем как config.json для следующего запуска
+                self.save()
+                logger.info(f"Config loaded from {config_example_path} and saved to {config_path}")
+                return True
+                
+            except Exception as e:
+                logger.warning(f"Failed to load config from example: {e}")
+        
+        # Если ни config.json, ни config.json.example не найдены, создаем новый с дефолтами
+        logger.info(f"Config file {config_path} not found, creating new one with defaults")
+        # Значения уже установлены через _apply_defaults() в __init__
+        # Просто сохраняем их
+        self.save()
+        return False
     
     def validate(self) -> bool:
         """

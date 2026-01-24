@@ -27,6 +27,17 @@ if errorlevel 1 (
 )
 echo.
 
+REM Копируем config.json.example в dist для пользователей
+echo 📋 Копирование config.json.example в dist...
+if exist config.json.example (
+    if not exist dist mkdir dist
+    copy /Y config.json.example dist\config.json.example >nul
+    echo ✅ config.json.example скопирован в dist
+) else (
+    echo ⚠️  config.json.example не найден, пропускаем копирование...
+)
+echo.
+
 REM Очистка старых файлов
 echo 🧹 Очистка старых файлов...
 if exist build rmdir /s /q build

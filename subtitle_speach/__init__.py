@@ -168,6 +168,8 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
                 text = text[:max_length - 3] + "..."
         
         lbl.setText(text)
+        # Автоматически подстраиваем ширину окна под содержимое
+        self.adjust_window_width()
         self.schedule_auto_hide()
     
     def update_volume(self, volume: int) -> None:
@@ -225,6 +227,54 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         # Запускаем новый таймер
         self.hide_timer.start(duration_ms)
     
+    def adjust_window_width(self):
+        """
+        Автоматически подстраивает ширину окна под длину самого длинного текста.
+        """
+        if not self.config:
+            return
+        
+        # Получаем шрифт из одного из лейблов
+        font = self.statelbl.font()
+        font.setPointSize(self.config.font_size)
+        font_metrics = QFontMetrics(font)
+        
+        # Находим самую длинную строку среди всех лейблов
+        max_width = 0
+        
+        # Проверяем statelbl
+        statelbl_text = self.statelbl.text()
+        if statelbl_text:
+            # Используем boundingRect для получения ширины текста
+            text_rect = font_metrics.boundingRect(statelbl_text)
+            text_width = text_rect.width()
+            max_width = max(max_width, text_width)
+        
+        # Проверяем все labels с сообщениями
+        for lbl in self.labels:
+            label_text = lbl.text()
+            if label_text:
+                # Используем boundingRect для получения ширины текста
+                text_rect = font_metrics.boundingRect(label_text)
+                text_width = text_rect.width()
+                max_width = max(max_width, text_width)
+        
+        # Если есть текст, устанавливаем ширину с учетом отступов
+        if max_width > 0:
+            # Добавляем отступы: 40px слева и справа + небольшой запас
+            padding = 80
+            min_width = 300  # Минимальная ширина окна
+            optimal_width = max(min_width, max_width + padding)
+            
+            # Ограничиваем максимальной шириной экрана (с небольшим запасом)
+            screen_width = QApplication.desktop().screenGeometry().width()
+            max_window_width = int(screen_width * 0.9)  # 90% ширины экрана
+            optimal_width = min(optimal_width, max_window_width)
+            
+            # Устанавливаем новую ширину, сохраняя текущую высоту
+            current_height = self.height()
+            self.resize(optimal_width, current_height)
+    
     def apply_config_settings(self):
         """Применяет настройки из config к окну"""
         if not self.config:
@@ -275,6 +325,9 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
                 # Вставляем перед stretch
                 layout.insertWidget(layout.count() - 1, new_lbl)
                 self.labels.append(new_lbl)
+        
+        # Подстраиваем ширину окна после изменения настроек
+        self.adjust_window_width()
     
     def _cleanup_excess_labels(self, target_count: int):
         """
@@ -329,7 +382,9 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
             delta = QPoint(event.globalPos() - self.old_Pos)
             if (self.old_Pos.x() > self.x() + self.old_width - 20) or \
                     (self.old_Pos.y() > self.y() + self.old_height - 20):
-                w = self.old_width + delta.x() if self.old_width + delta.x() > 500 else 500
+                # Минимальная ширина теперь динамическая (300px вместо 500px)
+                min_width = 300
+                w = self.old_width + delta.x() if self.old_width + delta.x() > min_width else min_width
                 h = self.old_height + delta.y() if self.old_height + delta.y() > 400 else 400
                 self.setFixedSize(w, h)
             else:

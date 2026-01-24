@@ -39,8 +39,16 @@ from threading_manager import (
 # Logging configuration
 from logger_config import setup_logging, get_logger
 
-# Setup logging
-setup_logging(log_file='speech_manager.log', level=logging.INFO)
+# Setup logging - используем ту же директорию, что и для конфига
+import os
+if getattr(sys, 'frozen', False):
+    # Запущено из .exe файла
+    log_dir = os.path.dirname(sys.executable)
+else:
+    # Запущено из Python скрипта
+    log_dir = os.getcwd()
+
+setup_logging(log_file='speech_manager.log', level=logging.INFO, log_dir=log_dir)
 logger = get_logger(__name__)
 
 
@@ -161,6 +169,12 @@ def process_speech(m: listner.ListnerManger) -> None:
                 "setStyleSheet",
                 Qt.QueuedConnection,
                 Q_ARG(str, style)
+            )
+            # Подстраиваем ширину окна под новый текст
+            QMetaObject.invokeMethod(
+                m.window,
+                "adjust_window_width",
+                Qt.QueuedConnection
             )
         except Exception as e:
             logger.error(f"Error updating status '{status_key}': {e}", exc_info=True)
@@ -308,8 +322,12 @@ def view_wget() -> None:
     Запускает главное окно приложения.
     Устанавливает размер, позицию и запускает Qt event loop.
     """
-    w.resize(500, 150)
+    # Начальный размер будет подстроен автоматически при первом добавлении текста
+    # Устанавливаем минимальную начальную ширину
+    w.resize(300, 150)
     w.show()
+    # Подстраиваем ширину под текущее содержимое при первом показе
+    w.adjust_window_width()
     w.move(GetSystemMetrics(0) - w.size().width(), GetSystemMetrics(1) - conf.window_offset_from_bottom)
     sys.exit(app.exec())
 
