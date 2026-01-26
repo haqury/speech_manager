@@ -12,7 +12,7 @@
   "phrase_time_limit": 8,
   "auto_hide_duration": 2,
   "output_interface": true,
-  "output_clipboard": true,
+  "output_clipboard": false,
   "output_text_cursor": true,
   "hotkey": "ctrl+shift+win+f5",
   "window_offset_from_bottom": 400,

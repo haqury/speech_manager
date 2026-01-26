@@ -99,6 +99,16 @@ class ListnerManger:
         if not config:
             return
         
+        # Сохраняем предыдущее содержимое буфера обмена, если нужно его восстановить
+        previous_clipboard = None
+        if config.output_text_cursor and not config.output_clipboard:
+            # Если вставка в курсор включена, но копирование в буфер выключено,
+            # сохраняем текущее содержимое буфера для последующего восстановления
+            try:
+                previous_clipboard = pc.paste()
+            except:
+                previous_clipboard = None
+        
         # Копируем в буфер обмена, если включено
         if config.output_clipboard:
             try:
@@ -109,23 +119,27 @@ class ListnerManger:
         # Вставляем в текстовый курсор, если включено
         if config.output_text_cursor:
             try:
-                # Всегда копируем текст в буфер обмена перед вставкой (даже если output_clipboard включен)
-                # Это гарантирует, что текст точно будет в буфере при вставке
-                pc.copy(text)
-                # Задержка для надежного копирования
-                config = self.state.Config if hasattr(self.state, 'Config') else None
-                delay = config.clipboard_copy_delay if config else 0.15
-                time.sleep(delay)
-                
-                # Проверяем что текст действительно в буфере
-                try:
-                    clipboard_check = pc.paste()
-                    if clipboard_check != text:
-                        # Если текст не совпадает, копируем еще раз
-                        pc.copy(text)
-                        time.sleep(delay)
-                except:
-                    pass
+                # Если output_clipboard выключен, временно копируем текст в буфер только для вставки
+                if not config.output_clipboard:
+                    # Временно копируем текст в буфер обмена для вставки
+                    pc.copy(text)
+                    # Задержка для надежного копирования
+                    delay = config.clipboard_copy_delay if config else 0.15
+                    time.sleep(delay)
+                    
+                    # Проверяем что текст действительно в буфере
+                    try:
+                        clipboard_check = pc.paste()
+                        if clipboard_check != text:
+                            # Если текст не совпадает, копируем еще раз
+                            pc.copy(text)
+                            time.sleep(delay)
+                    except:
+                        pass
+                else:
+                    # Если output_clipboard включен, текст уже в буфере, просто ждем
+                    delay = config.clipboard_copy_delay if config else 0.15
+                    time.sleep(delay)
                 
                 # Вставляем через Ctrl+V
                 # Используем keyboard вместо pyautogui для более надежной работы
@@ -141,6 +155,14 @@ class ListnerManger:
                         time.sleep(paste_delay)
                     except Exception as e2:
                         print(f'pyautogui.hotkey also failed: {e2}')
+                
+                # Восстанавливаем предыдущее содержимое буфера обмена, если output_clipboard выключен
+                if not config.output_clipboard and previous_clipboard is not None:
+                    try:
+                        time.sleep(0.1)  # Небольшая задержка после вставки
+                        pc.copy(previous_clipboard)
+                    except:
+                        pass
             except Exception as e:
                 print(f"Ошибка вставки текста в курсор: {e}")
                 import traceback
