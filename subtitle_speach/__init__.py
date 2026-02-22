@@ -155,8 +155,8 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
 
         layout.addStretch()
 
-        self.setWindowFlags(Qt.Tool |
-                            Qt.FramelessWindowHint |
+        # Без Qt.Tool — окно отображается на панели задач Windows
+        self.setWindowFlags(Qt.FramelessWindowHint |
                             Qt.WindowStaysOnTopHint)
         
         # Применяем настройки при инициализации
