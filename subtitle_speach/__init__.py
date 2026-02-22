@@ -1,7 +1,7 @@
 from typing import Optional
 
 from PyQt5.Qt import *
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyperclip as pc
 
 
@@ -30,6 +30,12 @@ class MessageLabel(QLabel):
 
 class MainWindow(QMainWindow):  # QMainWindow  -QWidget
     """Main window for displaying recognized speech."""
+    
+    # Сигналы для безопасного обновления UI из другого потока
+    status_update_requested = pyqtSignal(str, str)   # текст, стиль
+    show_window_requested = pyqtSignal()             # показать и активировать окно
+    show_volume_bar_requested = pyqtSignal(bool)     # показать/скрыть полосу громкости
+    volume_update_requested = pyqtSignal(int)        # установить значение полосы громкости (0-100)
     
     def __init__(self, config: Optional['config.Config'] = None) -> None:
         """
@@ -127,6 +133,12 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
                 if self.context_menu:
                     self.context_menu.exec_(event.globalPos())
         self.statelbl.mousePressEvent = on_statelbl_clicked
+        
+        # Слоты для обновления UI из любого потока
+        self.status_update_requested.connect(self._on_status_update, Qt.QueuedConnection)
+        self.show_window_requested.connect(self._on_show_window, Qt.QueuedConnection)
+        self.show_volume_bar_requested.connect(self._on_show_volume_bar, Qt.QueuedConnection)
+        self.volume_update_requested.connect(self._on_volume_update, Qt.QueuedConnection)
 
         self.labels = [MessageLabel(self) for i in range(3)]
         for i, lbl in enumerate(self.labels):
@@ -149,6 +161,47 @@ class MainWindow(QMainWindow):  # QMainWindow  -QWidget
         
         # Применяем настройки при инициализации
         self.apply_config_settings()
+    
+    @pyqtSlot(str, str)
+    def _on_status_update(self, text: str, style: str) -> None:
+        """
+        Слот для обновления статуса. Вызывается в главном потоке Qt при получении сигнала.
+        """
+        try:
+            self.statelbl.setText(text)
+            self.statelbl.setStyleSheet(style)
+            self.adjust_window_size()
+        except RuntimeError:
+            pass
+
+    @pyqtSlot()
+    def _on_show_window(self) -> None:
+        """Показать и активировать окно (вызов из главного потока)."""
+        try:
+            if not self.isVisible():
+                self.show()
+                self.activateWindow()
+                self.raise_()
+        except RuntimeError:
+            pass
+
+    @pyqtSlot(bool)
+    def _on_show_volume_bar(self, show: bool) -> None:
+        """Показать/скрыть полосу громкости (вызов из главного потока)."""
+        try:
+            self.volume_bar.setVisible(show)
+            if not show:
+                self.volume_bar.setValue(0)
+        except RuntimeError:
+            pass
+
+    @pyqtSlot(int)
+    def _on_volume_update(self, volume: int) -> None:
+        """Установить значение полосы громкости (вызов из главного потока)."""
+        try:
+            self.volume_bar.setValue(volume)
+        except RuntimeError:
+            pass
 
     def addAnswer(self, text: str):
         """

@@ -97,18 +97,14 @@ def process_speech(m: listner.ListnerManger) -> None:
             if m.window.config and getattr(m.window.config, 'enable_hotkey_stop_recording', True):
                 logger.info("⏹️  Stopping current recording via hotkey...")
                 current_recording_source.stop_recording()
-                # Обновляем статус
+                # Обновляем статус через сигнал (безопасно из любого потока)
                 try:
-                    from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
                     current_lang = state.get_keyboard_language_code()
                     status_text = i18n.get_status_text("ready", current_lang)
-                    QMetaObject.invokeMethod(
-                        m.window.statelbl,
-                        "setText",
-                        Qt.QueuedConnection,
-                        Q_ARG(str, status_text)
-                    )
-                except:
+                    font_size = m.window.config.font_size if m.window.config else 30
+                    style = get_status_style('on', font_size)
+                    m.window.status_update_requested.emit(status_text, style)
+                except Exception:
                     pass
                 return
         current_recording_source = None
@@ -116,19 +112,13 @@ def process_speech(m: listner.ListnerManger) -> None:
     logger.info("=" * 60)
     logger.info("🎤 Started speech recognition process")
 
-    # Вспомогательная функция для обновления статуса с цветом
+    # Вспомогательная функция для обновления статуса с цветом (безопасно из потока через сигнал)
     def update_status(status_key: str, use_text: str = None) -> None:
         """
         Обновляет текст и цвет статусного лейбла.
-        Автоматически определяет язык по текущей раскладке клавиатуры при каждом обновлении.
-        
-        Args:
-            status_key: Ключ статуса для текста ('listening', 'recognizing', 'ready', 'done', 'not_understood', 'network_error', 'error', 'audio_error')
-            use_text: Опциональный текст для отображения (если не указан, используется перевод по status_key)
+        Использует сигнал Qt для безопасного обновления UI из потока распознавания.
         """
         try:
-            from PyQt5.QtCore import QMetaObject, Qt, Q_ARG
-            
             # Определяем язык по текущей раскладке клавиатуры Windows ПРИ КАЖДОМ обновлении
             current_lang = state.get_keyboard_language_code()
             
@@ -140,42 +130,22 @@ def process_speech(m: listner.ListnerManger) -> None:
             
             # Маппинг ключей текста на ключи цветов
             color_key_map = {
-                'listening': 'listening',      # Зеленый
-                'recognizing': 'recognizing',   # Оранжевый
-                'ready': 'on',                  # Зеленый (активно)
-                'done': 'on',                   # Зеленый (успех)
-                'not_understood': 'error',      # Красный
-                'network_error': 'error',       # Красный
-                'error': 'error',               # Красный
-                'audio_error': 'error',         # Красный
+                'listening': 'listening',
+                'recognizing': 'recognizing',
+                'ready': 'on',
+                'done': 'on',
+                'not_understood': 'error',
+                'network_error': 'error',
+                'error': 'error',
+                'audio_error': 'error',
             }
-            
-            # Получаем ключ цвета
             color_key = color_key_map.get(status_key, 'off')
             
             font_size = m.window.config.font_size if m.window.config else 30
             style = get_status_style(color_key, font_size)
             
-            # Обновляем текст
-            QMetaObject.invokeMethod(
-                m.window.statelbl,
-                "setText",
-                Qt.QueuedConnection,
-                Q_ARG(str, text)
-            )
-            # Обновляем стиль (цвет)
-            QMetaObject.invokeMethod(
-                m.window.statelbl,
-                "setStyleSheet",
-                Qt.QueuedConnection,
-                Q_ARG(str, style)
-            )
-            # Подстраиваем размер окна под новый текст
-            QMetaObject.invokeMethod(
-                m.window,
-                "adjust_window_size",
-                Qt.QueuedConnection
-            )
+            # Обновляем UI через сигнал — выполнится в главном потоке Qt
+            m.window.status_update_requested.emit(text, style)
         except Exception as e:
             logger.error(f"Error updating status '{status_key}': {e}", exc_info=True)
     
@@ -188,7 +158,7 @@ def process_speech(m: listner.ListnerManger) -> None:
             volume: Уровень громкости (0-100)
         """
         try:
-            m.window.update_volume(volume)
+            m.window.volume_update_requested.emit(volume)
         except Exception as e:
             logger.error(f"Error updating volume: {e}", exc_info=True)
     
@@ -219,17 +189,11 @@ def process_speech(m: listner.ListnerManger) -> None:
         with recording_lock:
             current_recording_source = source
         try:
-            # Показываем окно при активации прослушивания
-            if not m.window.isVisible():
-                m.window.show()
-                m.window.activateWindow()
-                m.window.raise_()
-            
-            # Язык будет определен автоматически внутри update_status
+            # Показываем окно и полосу громкости через сигналы (безопасно из потока)
+            m.window.show_window_requested.emit()
             update_status("ready")
-            # Показываем визуализатор громкости
-            m.window.show_volume_bar(True)
-            # Сбрасываем таймер скрытия при активации
+            m.window.show_volume_bar_requested.emit(True)
+            # Сбрасываем таймер скрытия при активации (QTimer.stop() потокобезопасен)
             if m.window.config and m.window.config.auto_hide_duration > 0:
                 m.window.hide_timer.stop()
             
@@ -283,9 +247,8 @@ def process_speech(m: listner.ListnerManger) -> None:
                 # Язык будет определен автоматически внутри update_status
                 update_status("error")
             
-            # Скрываем визуализатор громкости и сбрасываем значение
-            m.window.show_volume_bar(False)
-            m.window.update_volume(0)
+            m.window.show_volume_bar_requested.emit(False)
+            m.window.volume_update_requested.emit(0)
             
             # Запускаем таймер скрытия после окончания прослушивания
             if m.window.config and m.window.config.auto_hide_duration > 0:
@@ -294,20 +257,20 @@ def process_speech(m: listner.ListnerManger) -> None:
             logger.warning("Google Speech Recognition could not understand audio")
             # Язык будет определен автоматически внутри update_status
             update_status("not_understood")
-            m.window.show_volume_bar(False)
-            m.window.update_volume(0)
+            m.window.show_volume_bar_requested.emit(False)
+            m.window.volume_update_requested.emit(0)
         except sr.RequestError as e:
             logger.error(f"Network error with Google Speech Recognition: {e}", exc_info=True)
             # Язык будет определен автоматически внутри update_status
             update_status("network_error")
-            m.window.show_volume_bar(False)
-            m.window.update_volume(0)
+            m.window.show_volume_bar_requested.emit(False)
+            m.window.volume_update_requested.emit(0)
         except OSError as e:
             logger.error(f"OSError: {e}", exc_info=True)
             # Язык будет определен автоматически внутри update_status
             update_status("audio_error")
-            m.window.show_volume_bar(False)
-            m.window.update_volume(0)
+            m.window.show_volume_bar_requested.emit(False)
+            m.window.volume_update_requested.emit(0)
         finally:
             # Очищаем ссылку на источник записи
             with recording_lock:
@@ -429,7 +392,7 @@ def create_tray_icon() -> QSystemTrayIcon:
                 keyboard.remove_hotkey(hotkey_handle)
             
             # Регистрируем новую
-            hotkey_handle = keyboard.add_hotkey(conf.hotkey, lambda: process_speech(l))
+            hotkey_handle = keyboard.add_hotkey(conf.hotkey, on_hotkey_pressed)
             logger.info(f"Hotkey reloaded: {conf.hotkey}")
         except Exception as e:
             logger.error(f"Error reloading hotkey: {e}", exc_info=True)
@@ -504,7 +467,12 @@ w.closeEvent = closeEvent
 
 # Запускает слушатель - сохраняем handle для удаления при выходе
 # Используем горячую клавишу из конфигурации
-hotkey_handle = keyboard.add_hotkey(conf.hotkey, lambda: process_speech(l))
+def on_hotkey_pressed():
+    """Вызывается при нажатии горячей клавиши. Запускает распознавание в отдельном потоке."""
+    thread = threading.Thread(target=process_speech, args=(l,), daemon=True)
+    thread.start()
+
+hotkey_handle = keyboard.add_hotkey(conf.hotkey, on_hotkey_pressed)
 logger.info(f"Hotkey registered: {conf.hotkey}")
 
 # ✅ Qt GUI должен быть в главном потоке, не в worker thread!
